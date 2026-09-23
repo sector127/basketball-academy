@@ -1,5 +1,5 @@
 import React from 'react';
-import {useRouter} from "next/navigation";
+import {useRouter, usePathname} from "next/navigation";
 import {Tooltip} from "@mui/material";
 import {Pacifico} from 'next/font/google';
 
@@ -11,6 +11,7 @@ const pacifico = Pacifico({
 const BasketballCourt = ({firstTeamPlayers}) => {
 
     const router = useRouter();
+    const pathname = usePathname();
     // Define positions for each player on the court
     const positions = {
         PG: {x: 150, y: 250},  // Point Guard
@@ -27,12 +28,14 @@ const BasketballCourt = ({firstTeamPlayers}) => {
     }
 
     const handleCourtPlayerClick = (goTo) => {
-        router.push('/dashboard/players/' + goTo);
+        const basePath = pathname?.includes('/coach') ? '/dashboard/coach/players/' : '/dashboard/admin/players/';
+        router.push(basePath + goTo);
     }
 
 
     return (
         <svg width="600" height="400" viewBox="0 0 600 400" fill="none"
+             className="w-full max-w-[600px] h-auto mx-auto block"
              xmlns="http://www.w3.org/2000/svg">
             {/* Court Outline with Wooden Texture */}
             <defs>

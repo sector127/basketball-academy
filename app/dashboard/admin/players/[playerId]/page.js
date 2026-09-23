@@ -1,166 +1,233 @@
-"use client";
+'use client';
 
-import React, {useEffect, useState} from "react";
-import DashboardLayout from "@/components/DashboardLayout";
-import Image from "next/image";
-import Loader from "@/components/Loader";
-import {motion} from "framer-motion";
-import {Card, CardContent} from "@/components/ui/card";
-import {Badge} from "@/components/ui/badge";
-import {Button} from "@/components/ui/button";
-import {useRouter} from "next/navigation";
-import {FaEdit} from "react-icons/fa";
-import {useSession} from "next-auth/react";
+import React, { useEffect, useState } from 'react';
+import DashboardLayout from '@/components/DashboardLayout';
+import { PageHeader } from '@/components/ui/page-header';
+import { StatCard } from '@/components/ui/stat-card';
+import { StatusBadge } from '@/components/ui/status-badge';
+import Image from 'next/image';
+import Loader from '@/components/Loader';
+import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
+import {
+  User,
+  ArrowLeft,
+  Edit2,
+  Shield,
+  Phone,
+  MapPin,
+  Calendar,
+  Ruler,
+  Star,
+  Users,
+} from 'lucide-react';
+import Link from 'next/link';
 
-export default function PlayerPage({params}) {
-    const [player, setPlayer] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const {playerId} = React.use(params);
-    const {data: session, status} = useSession();
+export default function AdminPlayerDetailsPage({ params }) {
+  const [player, setPlayer] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { playerId } = React.use(params);
+  const router = useRouter();
 
-
-    const router = useRouter();
-
-    useEffect(() => {
-        async function fetchPlayer() {
-            try {
-                const response = await fetch(`/api/admin/players/${playerId}`);
-                if (!response.ok) {
-                    throw new Error("Failed to fetch player");
-                }
-                const data = await response.json();
-                setPlayer(data);
-            } catch (error) {
-                console.error("Error fetching player:", error);
-                setError(error.message);
-            } finally {
-                setLoading(false);
-            }
+  useEffect(() => {
+    async function fetchPlayer() {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/admin/players/${playerId}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch player details');
         }
-
-        if (playerId) {
-            fetchPlayer();
-        }
-    }, [playerId]);
-
-    const handleEdit = () => {
-        router.push(`/dashboard/admin/players/edit/${playerId}`);
+        const data = await response.json();
+        setPlayer(data);
+      } catch (err) {
+        console.error('Error fetching player:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
     }
 
-    if (loading) {
-        return (
-            <DashboardLayout>
-                <Loader/>
-            </DashboardLayout>
-        );
+    if (playerId) {
+      fetchPlayer();
     }
+  }, [playerId]);
 
-    if (error) {
-        return (
-            <DashboardLayout>
-                <div className="flex justify-center items-center min-h-[50vh]">
-                    <p className="text-red-500 text-lg font-semibold">Error: {error}</p>
-                </div>
-            </DashboardLayout>
-        );
-    }
-
+  if (loading) {
     return (
-        <DashboardLayout>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <motion.div
-                    className="flex flex-col md:flex-row justify-between items-center md:items-start space-y-8 md:space-y-0 md:space-x-8"
-                    initial={{opacity: 0, y: 20}}
-                    animate={{opacity: 1, y: 0}}
-                    transition={{duration: 0.5}}
-                >
-                    {/* Profile Picture */}
-                    <div className="w-full md:w-1/3 flex justify-center">
-                        <div className="relative w-full h-96 md:h-auto">
-                            <Image
-                                src={player.profilePicture || "/uploads/default-profile-picture.jpg"}
-                                alt={`${player.name} ${player.lastname}`}
-                                width={500}
-                                height={500}
-                                sizes="(max-width: 768px) 100vw, 33vw"
-                                className="object-cover rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700"
-                                priority
-                            />
-                        </div>
-                    </div>
-
-                    {/* Player Info */}
-                    <div className="w-full md:w-2/3 flex flex-col space-y-8">
-                        <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100">
-                            {player.name} {player.lastname}
-                        </h1>
-
-                        <div className="flex items-center space-x-4">
-                            <Badge variant="secondary" className="text-lg font-medium px-4 py-2">
-                                #{player.jerseyNum || "XX"}
-                            </Badge>
-                            <Badge variant="outline" className="text-lg font-medium px-4 py-2">
-                                {player.position}
-                            </Badge>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <Card>
-                                <CardContent className='p-6'>
-                                    <p className="text-gray-700 dark:text-gray-300 font-medium">Team</p>
-                                    <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                                        {player.team.name}
-                                    </p>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardContent className='p-6'>
-                                    <p className="text-gray-700 dark:text-gray-300 font-medium">Age</p>
-                                    <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                                        {player.age}
-                                    </p>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardContent className='p-6'>
-                                    <p className="text-gray-700 dark:text-gray-300 font-medium">Height</p>
-                                    <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                                        {player.height} cm
-                                    </p>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardContent className='p-6'>
-                                    <p className="text-gray-700 dark:text-gray-300 font-medium">Guardian</p>
-                                    <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                                        {player.guardian}
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        </div>
-
-                        <Card>
-                            <CardContent className='p-6'>
-                                <p className="text-lg font-medium text-gray-700 dark:text-gray-300">Contact
-                                    Information</p>
-                                <div className="mt-2 space-y-2">
-                                    <p className="text-gray-900 dark:text-gray-100">
-                                        <strong>Player Tel:</strong> {player.tel}
-                                    </p>
-                                    <p className="text-gray-900 dark:text-gray-100">
-                                        <strong>Guardian Tel:</strong> {player.guardianTel}
-                                    </p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Button variant="outline" size="lg" className="self-start" onClick={handleEdit}>
-                            <FaEdit className="mr-2"/>
-                            Edit Profile
-                        </Button>
-                    </div>
-                </motion.div>
-            </div>
-        </DashboardLayout>
+      <DashboardLayout>
+        <PageHeader title="Player Profile" subtitle="Loading athlete telemetry..." />
+        <Loader />
+      </DashboardLayout>
     );
+  }
+
+  if (error || !player) {
+    return (
+      <DashboardLayout>
+        <PageHeader title="Player Not Found" subtitle="Unable to load requested player" />
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300">
+          {error || 'Player record does not exist or has been removed.'}
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const teamName = player.team?.name || (typeof player.team === 'string' ? player.team : 'Unassigned');
+
+  return (
+    <DashboardLayout>
+      <PageHeader
+        title={`${player.name} ${player.lastname}`}
+        subtitle={`Registered athlete in ${teamName} squad`}
+        badge={`Jersey #${player.jerseyNum ?? 'XX'}`}
+        icon={User}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline" size="sm" className="shadow-sm">
+              <Link href="/dashboard/admin/players">
+                <ArrowLeft className="mr-1.5 h-4 w-4" /> Players Directory
+              </Link>
+            </Button>
+            <Button
+              onClick={() => router.push(`/dashboard/admin/players/edit/${playerId}`)}
+              size="sm"
+              className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold shadow-sm"
+            >
+              <Edit2 className="mr-1.5 h-4 w-4" /> Edit Profile
+            </Button>
+          </div>
+        }
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column: Profile Card with Photo */}
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 text-center">
+            <div className="relative mx-auto h-52 w-52 overflow-hidden rounded-2xl border-2 border-amber-500/20 shadow-lg mb-4">
+              <Image
+                src={player.profilePicture || '/uploads/1739040439615-U18_Player.png'}
+                alt={`${player.name} ${player.lastname}`}
+                fill
+                className="object-cover"
+                priority
+              />
+            </div>
+
+            <div className="space-y-1">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                {player.name} {player.lastname}
+              </h2>
+              <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                {player.position}
+              </p>
+            </div>
+
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <StatusBadge
+                status={player.isActive ? 'active' : 'disabled'}
+                label={player.isActive ? 'Active Athlete' : 'Disabled'}
+                variant={player.isActive ? 'success' : 'destructive'}
+              />
+              {player.isFirstTeam && (
+                <StatusBadge status="firstTeam" label="First Team Starter" variant="gold" />
+              )}
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 text-left space-y-2.5 text-xs">
+              <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                <span className="flex items-center gap-1.5">
+                  <Shield className="h-3.5 w-3.5 text-amber-500" /> Team
+                </span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{teamName}</span>
+              </div>
+              <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5 text-blue-500" /> Address
+                </span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100 truncate max-w-[160px]">
+                  {player.address || 'Tbilisi, Georgia'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right 2 Columns: Physical Metrics & Guardian Contacts */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Key Metrics */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <StatCard
+              title="Jersey"
+              value={`#${player.jerseyNum ?? '--'}`}
+              description="Roster number"
+              accent="gold"
+            />
+            <StatCard
+              title="Height"
+              value={`${player.height ?? '--'} cm`}
+              description="Verified metric"
+              accent="blue"
+            />
+            <StatCard
+              title="Age"
+              value={player.age ?? '--'}
+              description={
+                player.dateOfBirth
+                  ? new Date(player.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
+                  : 'DOB verified'
+              }
+              accent="emerald"
+            />
+            <StatCard
+              title="Position"
+              value={player.position?.split(' ')[0] ?? 'Player'}
+              description={player.position ?? 'Court role'}
+              accent="purple"
+            />
+          </div>
+
+          {/* Contact & Guardian Information Card */}
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 space-y-4">
+            <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                <Phone className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  Emergency & Contact Information
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Direct telephone and authorized family contacts
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/60 dark:border-slate-800/80 dark:bg-slate-800/40 space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Player Contact
+                </span>
+                <p className="text-base font-bold font-mono text-slate-900 dark:text-slate-100">
+                  {player.tel || 'Not provided'}
+                </p>
+                <p className="text-xs text-slate-500">Athlete direct line</p>
+              </div>
+
+              <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/60 dark:border-slate-800/80 dark:bg-slate-800/40 space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Guardian ({player.guardian || 'Parent'})
+                </span>
+                <p className="text-base font-bold font-mono text-amber-600 dark:text-amber-400">
+                  {player.guardianTel || 'Not provided'}
+                </p>
+                <p className="text-xs text-slate-500">Emergency authorized guardian</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
 }

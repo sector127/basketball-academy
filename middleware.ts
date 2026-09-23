@@ -3,11 +3,22 @@ import {NextResponse} from "next/server";
 import type {NextRequest} from "next/server";
 
 export async function middleware(req: NextRequest) {
-    const token = await getToken({req, secret: process.env.NEXTAUTH_SECRET});
-
-    if (req.nextUrl.pathname.startsWith("/_next") || req.nextUrl.pathname.startsWith("/api")) {
+    if (req.nextUrl.pathname.startsWith("/_next") || req.nextUrl.pathname.startsWith("/api") || req.nextUrl.pathname.startsWith("/static")) {
         return NextResponse.next();
     }
+
+    const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+    const isSecure = req.nextUrl.protocol === "https:";
+    const cookieName = isSecure
+        ? "__Secure-authjs.session-token"
+        : (req.cookies.get("authjs.session-token") ? "authjs.session-token" : "next-auth.session-token");
+
+    const token = await getToken({
+        req,
+        secret,
+        salt: cookieName,
+        cookieName,
+    });
 
     if (!token) {
         const loginUrl = new URL("/login", req.url);
@@ -25,11 +36,18 @@ export async function middleware(req: NextRequest) {
         guardian: /^\/dashboard\/guardian(?:\/.*)?$/, // Guardians can access only /dashboard/guardian/*
     };
 
-    // 🚀 **Auto-redirect user to their role-based dashboard if they visit `/dashboard`**
-    if (req.nextUrl.pathname === "/dashboard" && userRole !== "admin") {
-        const redirectUrl = new URL(`/dashboard/${userRole}`, req.url);
-        console.log(`Redirecting ${userRole} to ${redirectUrl.pathname}`);
-        return NextResponse.redirect(redirectUrl);
+    // Auto-redirect non-admin users to their role-specific dashboard paths
+    if (userRole && userRole !== "admin" && !req.nextUrl.pathname.startsWith(`/dashboard/${userRole}`)) {
+        const subPath = req.nextUrl.pathname.replace(/^\/dashboard\/?/, "");
+        if (!subPath) {
+            return NextResponse.redirect(new URL(`/dashboard/${userRole}`, req.url));
+        }
+        const commonSections = ["games", "calendar", "players", "teams", "combinations"];
+        const firstSegment = subPath.split("/")[0];
+        if (commonSections.includes(firstSegment)) {
+            const redirectUrl = new URL(`/dashboard/${userRole}/${subPath}`, req.url);
+            return NextResponse.redirect(redirectUrl);
+        }
     }
 
     // Check if user's role is defined in access rules

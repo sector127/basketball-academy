@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -9,9 +8,11 @@ import { signIn } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { AlertCircle, Lock, Mail, ArrowRight } from 'lucide-react';
+import { AlertCircle, Lock, Mail } from 'lucide-react';
 
 const SignIn = () => {
+  const [email, setEmail] = useState('nika@bba.ge');
+  const [password, setPassword] = useState('password123');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -20,30 +21,31 @@ const SignIn = () => {
     setLoading(true);
     setError('');
 
-    const formData = new FormData(event.target);
-    const data = {
-      email: formData.get('email'),
-      password: formData.get('password'),
-      redirect: false,
-    };
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
 
-    const result = await signIn('credentials', data);
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirectTo: callbackUrl,
+        redirect: false,
+      });
 
-    if (result?.error) {
+      if (result?.error) {
+        setLoading(false);
+        setError('Invalid email or password.');
+      } else {
+        window.location.href = callbackUrl;
+      }
+    } catch (err) {
       setLoading(false);
-      setError(
-        result.error === 'Configuration'
-          ? 'Invalid email or password.'
-          : 'Authentication error. Please check your credentials.'
-      );
-    } else {
-      window.location.href = '/dashboard';
+      setError('An error occurred during sign in.');
     }
   };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 p-4 sm:p-6 lg:p-10 relative overflow-hidden">
-      {/* Background soft glow */}
       <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full bg-amber-500/10 dark:bg-amber-500/5 blur-3xl" />
 
       <motion.div
@@ -107,9 +109,10 @@ const SignIn = () => {
                   id="email"
                   name="email"
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="e.g. nika@bba.ge"
                   required
-                  defaultValue="nika@bba.ge"
                   className="pl-9 h-10 text-sm bg-slate-50 dark:bg-slate-800/60"
                 />
               </div>
@@ -133,9 +136,10 @@ const SignIn = () => {
                   id="password"
                   name="password"
                   type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   required
-                  defaultValue="password123"
                   className="pl-9 h-10 text-sm bg-slate-50 dark:bg-slate-800/60"
                 />
               </div>
@@ -154,13 +158,21 @@ const SignIn = () => {
           <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 text-center">
             <p className="text-[11px] text-slate-400 font-medium">Demo Staff Accounts:</p>
             <div className="mt-1 flex items-center justify-center gap-2 text-xs font-mono text-slate-600 dark:text-slate-400">
-              <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+              <button
+                type="button"
+                onClick={() => { setEmail('admin@bba.ge'); setPassword('admin123'); }}
+                className="bg-slate-100 dark:bg-slate-800 hover:bg-amber-500/20 px-2 py-0.5 rounded transition-colors"
+              >
                 admin@bba.ge
-              </span>
+              </button>
               <span>&bull;</span>
-              <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+              <button
+                type="button"
+                onClick={() => { setEmail('nika@bba.ge'); setPassword('password123'); }}
+                className="bg-slate-100 dark:bg-slate-800 hover:bg-amber-500/20 px-2 py-0.5 rounded transition-colors"
+              >
                 nika@bba.ge
-              </span>
+              </button>
             </div>
           </div>
         </div>

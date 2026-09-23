@@ -33,7 +33,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Search, SlidersHorizontal, Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 
 export function DataTable({ columns, data = [], onDataChange, context, onAdd }) {
@@ -43,6 +43,7 @@ export function DataTable({ columns, data = [], onDataChange, context, onAdd }) 
   const [openDialog, setOpenDialog] = useState(false);
 
   const router = useRouter();
+  const pathname = usePathname();
 
   const table = useReactTable({
     data: data || [],
@@ -67,8 +68,11 @@ export function DataTable({ columns, data = [], onDataChange, context, onAdd }) 
   });
 
   const handleOnRowClick = (row) => {
-    if (context === "players") {
-      router.push(`/dashboard/admin/players/${row.original._id}`);
+    if (context === "players" || context === "team") {
+      const basePath = pathname?.includes("/coach")
+        ? `/dashboard/coach/players/${row.original._id}`
+        : `/dashboard/admin/players/${row.original._id}`;
+      router.push(basePath);
     }
   };
 
