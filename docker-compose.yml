@@ -1,0 +1,29 @@
+# docker-compose.yml
+version: '3.8'
+services:
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/basketball
+      - WATCHPACK_POLLING=true    # Enable polling for Windows/macOS
+    depends_on:
+      - mongodb
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    # Add these for better hot reloading support
+    stdin_open: true
+    tty: true
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+volumes:
+  mongodb_data:

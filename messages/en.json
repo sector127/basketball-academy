@@ -1,0 +1,67 @@
+{
+  "Dashboard": {
+    "dashboard": "Dashboard",
+    "home": "Home",
+    "hi": "Hi",
+    "subtitle": "Welcome to the admin dashboard. Use the sidebar to manage teams, players, and games.",
+    "search": "Search",
+    "theme": "Theme",
+    "language": "Language",
+    "account": "Account",
+    "notifications": "Notifications",
+    "settings": "Settings",
+    "signOut": "Sign Out",
+    "teams": "Teams",
+    "players": "Players",
+    "games": "Games",
+    "coaches": "Coaches",
+    "calendar": "Calendar",
+    "venues": "Venues",
+    "combinations": "Combinations"
+  },
+  "Login": {
+    "Dashboard": "Login",
+    "email": "Email",
+    "password": "Password",
+    "login": "Login",
+    "forgotPassword": "Forgot Password",
+    "register": "Register"
+  },
+  "LanguageSelector": {
+    "language": "Language",
+    "english": "English",
+    "georgian": "Georgian"
+  },
+  "Teams": {
+    "title": "Teams",
+    "loadingTeams": "Loading Teams...",
+    "noTeams": "No Teams available.",
+    "addTeam": "Add Team",
+    "createTeam": "Create Team",
+    "createTeamDescription": "Please enter the team name and description. Click save when you are done.",
+    "editTeamDescription": "Please enter the team name and description. Click save when you are done.",
+    "editTeam": "Edit",
+    "deleteTeam": "Delete",
+    "teamName": "Team Name",
+    "teamDescription": "Team Description",
+    "updateTeam": "Update",
+    "saveTeam": "Save",
+    "teamCoaches": "Team Coaches"
+  },
+  "Venues": {
+    "title": "Venues",
+    "loadingVenues": "Loading Venues...",
+    "noVenues": "No Venues available.",
+    "addVenue": "Add Venue",
+    "createVenue": "Create Venue",
+    "createVenueDescription": "Please enter the Venue name and description. Click save when you are done.",
+    "editVenue": "Edit Venue",
+    "deleteVenue": "Delete Venue",
+    "venueName": "Venue name",
+    "venueDescription": "Venue description",
+    "saveVenue": "Save",
+    "venueLocation": "Venue location",
+    "latitude": "Latitude",
+    "longitude": "Longitude"
+  }
+}

@@ -1,0 +1,52 @@
+import {NextResponse} from 'next/server';
+import connectToDatabase from "@/lib/mongoose";
+import Player from '@/models/Player';
+import Team from '@/models/Team';
+import mongoose from 'mongoose';
+
+export async function GET(request, {params}) {
+    const {teamId} = await params
+
+    try {
+        await connectToDatabase();
+
+        // Validate teamId
+        if (!mongoose.Types.ObjectId.isValid(teamId)) {
+            return NextResponse.json({success: false, error: 'Invalid team ID'}, {status: 400});
+        }
+
+        // Find players with the matching teamId
+        const players = await Player.find({team: new mongoose.Types.ObjectId(teamId), isActive: true})
+            .select('name position dateOfBirth age lastname height isFirstTeam jerseyNum')
+            .populate('team', 'name');
+        return NextResponse.json({success: true, data: players});
+    } catch (error) {
+        console.error('Error fetching players:', error);
+        return NextResponse.json({success: false, error: 'Error fetching players'}, {status: 500});
+    }
+}
+
+export async function PUT(request, {params}) {
+    const {teamId} = await params
+
+    try {
+        await connectToDatabase();
+
+        const {name, description, coach} = await request.json();
+
+        const updatedTeam = await Team.findByIdAndUpdate(
+            teamId,
+            {name, description, coach},
+            {new: true}
+        );
+        if (!updatedTeam) {
+            return NextResponse.json({error: 'Team not found.'}, {status: 404});
+        }
+
+        // Return the updated team
+        return NextResponse.json(updatedTeam, {status: 200});
+    } catch (error) {
+        console.error('Error updating team:', error);
+        return NextResponse.json({success: false, error: 'Error updating player'}, {status: 500});
+    }
+}
