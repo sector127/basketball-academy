@@ -1,126 +1,172 @@
-"use client";
-import React, {useState} from "react";
-import {Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription} from "@/components/ui/card";
-import {Input} from "@/components/ui/input";
-import {Label} from "@/components/ui/label";
-import {Button} from "@/components/ui/button";
-import {signIn} from "next-auth/react";
-import Image from "next/image";
-import Link from "next/link";
-import {motion} from "framer-motion";
+'use client';
+
+import React, { useState } from 'react';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { signIn } from 'next-auth/react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { AlertCircle, Lock, Mail, ArrowRight } from 'lucide-react';
 
 const SignIn = () => {
-    const [error, setError] = useState(""); // State to store error messages
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-    const handleSignIn = async (event) => {
-        event.preventDefault(); // Prevent the default form submission behavior
-        const formData = new FormData(event.target);
-        const data = {
-            email: formData.get("email"),
-            password: formData.get("password"),
-            redirect: false, // Prevent automatic redirection
-        };
+  const handleSignIn = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setError('');
 
-        // Call the signIn function
-        const result = await signIn("credentials", data);
-
-        if (result?.error) {
-            console.log(result.error);
-            // Handle authentication error
-            setError(
-                result.error === "Configuration"
-                    ? "Invalid email or password."
-                    : "An error occurred. Please try again."
-            );
-        } else {
-            // Redirect to the dashboard on success
-            window.location.href = "/dashboard";
-        }
+    const formData = new FormData(event.target);
+    const data = {
+      email: formData.get('email'),
+      password: formData.get('password'),
+      redirect: false,
     };
 
-    return (
-        <div
-            className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 p-6 md:p-10">
-            <motion.div
-                className="w-full max-w-md flex flex-col gap-6"
-                initial={{opacity: 0, y: 30}}
-                animate={{opacity: 1, y: 0}}
-                transition={{duration: 0.6}}
-            >
-                <Link
-                    href={"/"}
-                    className="text-lg flex items-center justify-center space-x-2 mb-6"
-                >
-                    <Image
-                        src="/assets/images/logo.png"
-                        alt="BBA-logo"
-                        width={60}
-                        height={60}
-                        className="object-contain transition-transform hover:scale-105 duration-500"
-                        priority
-                    />
-                </Link>
-                <Card className="bg-white dark:bg-gray-800 shadow-xl rounded-xl">
-                    <CardHeader className="text-center">
-                        <CardTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                            Welcome Back
-                        </CardTitle>
-                        <CardDescription className="text-gray-700 dark:text-gray-400">
-                            Please log in to continue
-                        </CardDescription>
-                    </CardHeader>
-                    <form onSubmit={handleSignIn} className="space-y-4">
-                        <CardContent className="space-y-4">
-                            {/* Display error message if there's an error */}
-                            {error && (
-                                <motion.div
-                                    className="text-red-500 text-sm text-center"
-                                    initial={{opacity: 0}}
-                                    animate={{opacity: 1}}
-                                >
-                                    {error}
-                                </motion.div>
-                            )}
-                            <div className="space-y-2">
-                                <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">
-                                    Email
-                                </Label>
-                                <Input
-                                    id="email"
-                                    name="email"
-                                    type="email"
-                                    placeholder="Enter your email"
-                                    required
-                                    className="border-gray-300 dark:border-gray-700"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="password" className="text-gray-700 dark:text-gray-300">
-                                    Password
-                                </Label>
-                                <Input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    placeholder="Enter your password"
-                                    required
-                                    className="border-gray-300 dark:border-gray-700"
-                                />
-                            </div>
-                        </CardContent>
-                        <CardFooter>
-                            <Button
-                                type="submit"
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600"
-                            >
-                                Sign in
-                            </Button>
-                        </CardFooter>
-                    </form>
-                </Card>
-            </motion.div>
+    const result = await signIn('credentials', data);
+
+    if (result?.error) {
+      setLoading(false);
+      setError(
+        result.error === 'Configuration'
+          ? 'Invalid email or password.'
+          : 'Authentication error. Please check your credentials.'
+      );
+    } else {
+      window.location.href = '/dashboard';
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 p-4 sm:p-6 lg:p-10 relative overflow-hidden">
+      {/* Background soft glow */}
+      <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full bg-amber-500/10 dark:bg-amber-500/5 blur-3xl" />
+
+      <motion.div
+        className="w-full max-w-md flex flex-col gap-6 relative"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <div className="flex flex-col items-center text-center">
+          <Link href="/" className="group flex flex-col items-center gap-2 mb-2">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md group-hover:scale-105 transition-transform duration-300">
+              <Image
+                src="/assets/images/logo.png"
+                alt="BBA logo"
+                width={36}
+                height={36}
+                className="object-contain"
+                priority
+              />
+            </div>
+            <div>
+              <h2 className="font-bold text-lg text-slate-900 dark:text-slate-100">
+                Brooklyn Basketball Academy
+              </h2>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                Tbilisi Branch Portal
+              </span>
+            </div>
+          </Link>
         </div>
-    );
+
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-8 shadow-xl dark:border-slate-800 dark:bg-slate-900/90">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+              Welcome Back
+            </h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Sign in with your academy staff or coach credentials
+            </p>
+          </div>
+
+          <form onSubmit={handleSignIn} className="space-y-4">
+            {error && (
+              <motion.div
+                className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300"
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <AlertCircle className="h-4 w-4 shrink-0 text-rose-500" />
+                <span>{error}</span>
+              </motion.div>
+            )}
+
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Email Address
+              </Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="e.g. nika@bba.ge"
+                  required
+                  defaultValue="nika@bba.ge"
+                  className="pl-9 h-10 text-sm bg-slate-50 dark:bg-slate-800/60"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Password
+                </Label>
+                <Link
+                  href="/resetPassword"
+                  className="text-xs font-medium text-amber-600 hover:text-amber-700 dark:text-amber-400"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  required
+                  defaultValue="password123"
+                  className="pl-9 h-10 text-sm bg-slate-50 dark:bg-slate-800/60"
+                />
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full h-10 mt-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold shadow-md text-sm"
+            >
+              {loading ? 'Authenticating...' : 'Sign In'}
+            </Button>
+          </form>
+
+          {/* Quick Demo Credentials Footer */}
+          <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 text-center">
+            <p className="text-[11px] text-slate-400 font-medium">Demo Staff Accounts:</p>
+            <div className="mt-1 flex items-center justify-center gap-2 text-xs font-mono text-slate-600 dark:text-slate-400">
+              <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                admin@bba.ge
+              </span>
+              <span>&bull;</span>
+              <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                nika@bba.ge
+              </span>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
 };
 
 export default SignIn;

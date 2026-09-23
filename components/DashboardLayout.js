@@ -1,361 +1,380 @@
 'use client';
 
-import React, {useEffect, useState, useMemo} from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import {usePathname} from 'next/navigation';
-import {useTranslations} from 'next-intl';
-import {useSession} from 'next-auth/react';
+import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { useSession } from 'next-auth/react';
 
-import {Separator} from '@/components/ui/separator';
-import {Input} from '@/components/ui/input';
-import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
-import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
+import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {Sheet, SheetContent, SheetTrigger} from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Badge } from '@/components/ui/badge';
 
 // Icons
-import {LuBadgeCheck, LuBell, LuChevronsDown, LuLogOut, LuSettings, LuMenu} from 'react-icons/lu';
-import {FiSidebar} from 'react-icons/fi';
+import {
+  LuBadgeCheck,
+  LuBell,
+  LuChevronsDown,
+  LuLogOut,
+  LuSettings,
+  LuMenu,
+  LuSearch,
+} from 'react-icons/lu';
+import { FiSidebar } from 'react-icons/fi';
 
 // Custom components
 import SignOutButton from '@/components/SignOutButton';
 import ThemeToggle from '@/components/DarkModeToggle';
 import LanguageSelector from '@/components/LanguageSelector';
 import Breadcrumbs from '@/components/Breadcrumbs';
-import {navConfig} from '@/lib/navConfig';
+import { navConfig } from '@/lib/navConfig';
+import { cn } from '@/lib/utils';
 
-export default function DashboardLayout({children}) {
-    const pathname = usePathname();
-    const t = useTranslations('Dashboard');
-    const {data: session} = useSession();
+export default function DashboardLayout({ children }) {
+  const pathname = usePathname();
+  const t = useTranslations('Dashboard');
+  const { data: session } = useSession();
 
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [isClient, setIsClient] = useState(false);
-    const [hoveredIcon, setHoveredIcon] = useState(null);
-    const [user, setUser] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [hoveredIcon, setHoveredIcon] = useState(null);
+  const [user, setUser] = useState(null);
 
-    // Initialize client-side state
-    useEffect(() => {
-        setIsClient(true);
-        const storedSidebarState = localStorage.getItem('isSidebarOpen');
-        if (storedSidebarState !== null) {
-            setIsSidebarOpen(JSON.parse(storedSidebarState));
-        }
-    }, []);
+  // Initialize client-side state
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('isSidebarOpen');
+      if (stored !== null) {
+        setIsSidebarOpen(JSON.parse(stored));
+      }
+    } catch {
+      // ignore storage access errors
+    }
+  }, []);
 
-    // Update user state when session changes
-    useEffect(() => {
-        setUser(session?.user);
-    }, [session]);
+  // Update user state when session changes
+  useEffect(() => {
+    setUser(session?.user);
+  }, [session]);
 
-    // Compute navItems based on user role
-    const navItems = useMemo(() => {
-        const role = user?.role?.toLowerCase();
-        if (role && navConfig[role]) {
-            return navConfig[role].map((item) => ({
-                ...item,
-                label: t(item.labelKey),
-            }));
-        }
-        return [];
-    }, [user?.role, t]);
+  // Compute navItems based on user role
+  const navItems = useMemo(() => {
+    const role = user?.role?.toLowerCase();
+    if (role && navConfig[role]) {
+      return navConfig[role].map((item) => ({
+        ...item,
+        label: t(item.labelKey),
+      }));
+    }
+    return [];
+  }, [user?.role, t]);
 
-    // Toggle sidebar and persist state
-    const toggleSidebar = () => {
-        const newState = !isSidebarOpen;
-        setIsSidebarOpen(newState);
-        localStorage.setItem('isSidebarOpen', JSON.stringify(newState));
-    };
+  // Toggle sidebar and persist state
+  const toggleSidebar = () => {
+    setIsSidebarOpen((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('isSidebarOpen', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
 
-    return (
-        <TooltipProvider>
-            <div className="flex min-h-screen flex-col">
-                {/* Header */}
-                <Header user={user} t={t}/>
+  return (
+    <TooltipProvider delayDuration={200}>
+      <div className="flex min-h-screen flex-col bg-slate-50/50 dark:bg-slate-950 font-sans">
+        {/* Header */}
+        <Header user={user} t={t} toggleSidebar={toggleSidebar} navItems={navItems} pathname={pathname} />
 
-                <Separator className="dark:bg-slate-700"/>
-
-                <div className="flex flex-1 overflow-hidden dark:bg-slate-900 dark:text-slate-50">
-                    {/* Sidebar */}
-                    {isClient && (
-                        <Sidebar
-                            isSidebarOpen={isSidebarOpen}
-                            toggleSidebar={toggleSidebar}
-                            navItems={navItems}
-                            pathname={pathname}
-                            hoveredIcon={hoveredIcon}
-                            setHoveredIcon={setHoveredIcon}
-                            t={t}
-                        />
-                    )}
-
-                    {isClient && <Separator orientation="vertical" className="h-auto dark:bg-slate-700"/>}
-
-                    {/* Main Content */}
-                    <main className="flex-1 overflow-auto p-4 space-y-4">
-                        <div className='flex pl-8'>
-                            <Separator orientation="vertical" className="h-auto dark:bg-slate-700 mr-2"/>
-                            <Breadcrumbs/>
-
-                        </div>
-                        {children}
-                    </main>
-                </div>
+        <div className="flex flex-1 overflow-hidden">
+          {/* Desktop Sidebar */}
+          <aside
+            className={cn(
+              'relative hidden shrink-0 flex-col border-r border-slate-200/70 bg-white/70 backdrop-blur-md transition-all duration-300 dark:border-slate-800 dark:bg-slate-900/60 lg:flex',
+              isSidebarOpen ? 'w-64' : 'w-20'
+            )}
+          >
+            {/* Collapse toggle row */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800/80">
+              <span
+                className={cn(
+                  'text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 transition-opacity',
+                  !isSidebarOpen && 'opacity-0'
+                )}
+              >
+                Navigation
+              </span>
+              <button
+                onClick={toggleSidebar}
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
+                aria-label={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+              >
+                <FiSidebar className="h-4 w-4" />
+              </button>
             </div>
-        </TooltipProvider>
-    );
+
+            <nav className="flex-1 overflow-y-auto p-3" role="navigation">
+              <SidebarNavItems
+                navItems={navItems}
+                pathname={pathname}
+                hoveredIcon={hoveredIcon}
+                setHoveredIcon={setHoveredIcon}
+                isSidebarOpen={isSidebarOpen}
+              />
+            </nav>
+          </aside>
+
+          {/* Main Content Area */}
+          <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 space-y-6">
+            <div className="flex items-center gap-2">
+              <Breadcrumbs />
+            </div>
+            {children}
+          </main>
+        </div>
+      </div>
+    </TooltipProvider>
+  );
 }
 
 // Header Component
-function Header({user, t}) {
-    return (
-        <header className="flex items-center justify-between bg-gray-50 px-4 py-2 dark:bg-slate-950">
-            <Link href="/dashboard" className="flex items-center space-x-2 text-lg">
+function Header({ user, t, navItems, pathname }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  return (
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200/80 bg-white/80 px-4 sm:px-6 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/80">
+      <div className="flex items-center gap-3">
+        {/* Mobile menu sheet */}
+        <div className="lg:hidden">
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetTrigger asChild>
+              <button className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
+                <LuMenu className="h-5 w-5" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72 p-0 bg-white dark:bg-slate-900">
+              <div className="flex h-16 items-center gap-2 px-6 border-b border-slate-200/80 dark:border-slate-800">
                 <Image
-                    src="/assets/images/logo.png"
-                    alt="BBA-logo"
-                    width={40}
-                    height={40}
-                    className="object-contain transition-all duration-700"
-                    priority
+                  src="/assets/images/logo.png"
+                  alt="BBA-logo"
+                  width={32}
+                  height={32}
+                  className="object-contain"
                 />
-                <h2 className="text-xl font-semibold dark:text-slate-50">{t('dashboard')}</h2>
-            </Link>
+                <span className="font-bold tracking-tight text-slate-900 dark:text-slate-50">
+                  Brooklyn Academy
+                </span>
+              </div>
+              <div className="p-4" onClick={() => setMobileOpen(false)}>
+                <SidebarNavItems navItems={navItems} pathname={pathname} isSidebarOpen={true} />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
 
-            <div className="flex items-center space-x-2">
-                <Input className="w-48" placeholder={t('search')} aria-label="Search"/>
-                <UserMenu user={user} t={t}/>
-            </div>
-        </header>
-    );
+        {/* Brand Link */}
+        <Link href="/dashboard" className="flex items-center gap-2.5 group">
+          <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/20 group-hover:scale-105 transition-transform duration-300">
+            <Image
+              src="/assets/images/logo.png"
+              alt="BBA-logo"
+              width={26}
+              height={26}
+              className="object-contain"
+              priority
+            />
+          </div>
+          <div className="hidden sm:flex flex-col">
+            <span className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-50">
+              Brooklyn Academy
+            </span>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 -mt-0.5">
+              Tbilisi Branch
+            </span>
+          </div>
+        </Link>
+      </div>
+
+      {/* Right utility items */}
+      <div className="flex items-center gap-3">
+        <div className="relative hidden md:block">
+          <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            className="w-56 pl-9 h-9 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-800 rounded-lg"
+            placeholder={t('search') || 'Search...'}
+            aria-label="Search"
+          />
+        </div>
+
+        <UserMenu user={user} t={t} />
+      </div>
+    </header>
+  );
 }
 
-// UserMenu Component (Nested in Header)
-function UserMenu({user, t}) {
-    return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <button className="flex items-center space-x-2 hover:opacity-80 transition-opacity duration-200">
-                    <Avatar className="h-9 w-9 border-2 border-primary/20 hover:border-primary/50 transition-colors">
-                        <AvatarImage
-                            src={user?.image}
-                            alt="User avatar"
-                            className="grayscale transition-all duration-300 hover:grayscale-0"
-                        />
-                        <AvatarFallback className="bg-primary/10 text-primary font-medium">
-                            {user?.name?.slice(0, 2).toUpperCase() || 'UN'}
-                        </AvatarFallback>
-                    </Avatar>
+// UserMenu Component
+function UserMenu({ user, t }) {
+  const role = user?.role || 'staff';
 
-                    <div className="flex flex-col items-start max-w-[160px]">
-            <span
-                className="text-sm font-medium truncate dark:text-slate-100 group-hover:text-primary transition-colors">
-              {t('hi')} {user?.name}
-            </span>
-                        <span className="text-xs text-muted-foreground truncate dark:text-slate-300">
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="flex items-center gap-2.5 rounded-full p-1 pl-2 hover:bg-slate-100 dark:hover:bg-slate-800/80 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all">
+          <div className="hidden text-right sm:block">
+            <div className="flex items-center justify-end gap-1.5">
+              <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate max-w-[120px]">
+                {user?.name || 'User'}
+              </span>
+              <Badge
+                variant="outline"
+                className="text-[10px] px-1.5 py-0 uppercase font-bold tracking-wider bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
+              >
+                {role}
+              </Badge>
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[140px]">
               {user?.email}
-            </span>
-                    </div>
+            </p>
+          </div>
 
-                    <LuChevronsDown
-                        className="ml-2 size-4 text-muted-foreground dark:text-slate-300 transition-transform"/>
-                </button>
-            </DropdownMenuTrigger>
+          <Avatar className="h-8 w-8 ring-2 ring-amber-500/20">
+            <AvatarImage src={user?.image} alt="User avatar" />
+            <AvatarFallback className="bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs font-bold">
+              {user?.name?.slice(0, 2).toUpperCase() || 'UN'}
+            </AvatarFallback>
+          </Avatar>
 
-            <DropdownMenuContent
-                side="bottom"
-                sideOffset={12}
-                className="w-[320px] p-2 rounded-xl shadow-lg dark:border-slate-700"
-            >
-                <DropdownMenuGroup>
-                    <DropdownMenuItem className="group cursor-pointer rounded-lg p-3">
-                        <LuBadgeCheck className="mr-3 size-5 text-primary opacity-80 group-hover:opacity-100"/>
-                        <div>
-                            <div className="font-medium">{t('account')}</div>
-                            <div className="text-xs text-muted-foreground">Manage your account settings</div>
-                        </div>
-                    </DropdownMenuItem>
+          <LuChevronsDown className="h-3.5 w-3.5 text-slate-400" />
+        </button>
+      </DropdownMenuTrigger>
 
-                    <DropdownMenuItem className="group cursor-pointer rounded-lg p-3">
-                        <LuBell className="mr-3 size-5 text-primary opacity-80 group-hover:opacity-100"/>
-                        <div>
-                            <div className="font-medium">{t('notifications')}</div>
-                            <div className="text-xs text-muted-foreground">View notifications</div>
-                        </div>
-                    </DropdownMenuItem>
-                </DropdownMenuGroup>
+      <DropdownMenuContent
+        side="bottom"
+        align="end"
+        sideOffset={8}
+        className="w-72 p-2 rounded-2xl shadow-xl border border-slate-200/80 dark:border-slate-800 dark:bg-slate-900"
+      >
+        <div className="p-3 border-b border-slate-100 dark:border-slate-800 mb-1">
+          <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+            {user?.name} {user?.lastName || ''}
+          </p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+            {user?.email}
+          </p>
+        </div>
 
-                <DropdownMenuSeparator className="dark:bg-slate-700 my-2"/>
-
-                <div className="p-3 space-y-4 bg-accent/30 rounded-lg dark:bg-slate-800/50">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                            <LuSettings className="size-4 text-muted-foreground"/>
-                            <span className="text-sm font-medium">{t('settings')}</span>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                        <div className="flex flex-col space-y-2">
-                            <label className="text-xs text-muted-foreground">{t('theme')}</label>
-                            <span>
-                            <ThemeToggle/>
-                            </span>
-                        </div>
-
-                        <div className="flex flex-col space-y-2">
-                            <label className="text-xs text-muted-foreground">{t('language')}</label>
-                            <LanguageSelector/>
-                        </div>
-                    </div>
-                </div>
-
-                <DropdownMenuSeparator className="dark:bg-slate-700 my-2"/>
-
-                <DropdownMenuItem
-                    className="cursor-pointer rounded-lg p-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
-                    <LuLogOut className="mr-3 size-5"/>
-                    <SignOutButton/>
-                </DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
-    );
-}
-
-// Sidebar Component
-function Sidebar({isSidebarOpen, toggleSidebar, navItems, pathname, hoveredIcon, setHoveredIcon, t}) {
-    const [isSheetOpen, setIsSheetOpen] = useState(false);
-
-    return (
-        <>
-            {/* Mobile Sidebar (Sheet) */}
-            <div className="lg:hidden">
-                <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                    <SheetTrigger asChild>
-                        <button className="p-2 text-gray-500 hover:text-black dark:text-gray-300 dark:hover:text-white">
-                            <LuMenu className="size-5"/>
-                        </button>
-                    </SheetTrigger>
-                    <SheetContent side="left" className="w-64 bg-slate-50 p-0 dark:bg-slate-950">
-                        <div className="p-4">
-                            <Link href="/dashboard" className="mb-6 flex items-center space-x-2">
-                                <Image
-                                    src="/assets/images/logo.png"
-                                    alt="BBA-logo"
-                                    width={32}
-                                    height={32}
-                                    className="object-contain"
-                                />
-                                <h3 className="text-lg font-semibold dark:text-white">{t('dashboard')}</h3>
-                            </Link>
-                            <nav>
-                                <SidebarNavItems
-                                    navItems={navItems}
-                                    pathname={pathname}
-                                    hoveredIcon={hoveredIcon}
-                                    setHoveredIcon={setHoveredIcon}
-                                    isSidebarOpen={true} // Always expanded in mobile
-                                />
-                            </nav>
-                        </div>
-                    </SheetContent>
-                </Sheet>
+        <DropdownMenuGroup className="space-y-0.5">
+          <DropdownMenuItem className="cursor-pointer rounded-lg p-2.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">
+            <LuBadgeCheck className="mr-2.5 h-4 w-4 text-amber-500" />
+            <div>
+              <div className="font-semibold">{t('account') || 'Account'}</div>
+              <div className="text-[10px] text-slate-400">Profile & preferences</div>
             </div>
+          </DropdownMenuItem>
 
-            {/* Desktop Sidebar */}
-            <aside
-                className={`relative hidden min-h-[calc(100vh-81px)] flex-col bg-slate-50 transition-all duration-300 dark:bg-slate-950 lg:flex ${
-                    isSidebarOpen ? 'w-64' : 'w-16'
-                }`}
-            >
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <button
-                            onClick={toggleSidebar}
-                            className="absolute -right-10 top-4 self-end rounded-sm p-1 transition-opacity duration-300 hover:text-black dark:hover:bg-slate-600 dark:hover:text-gray-50"
-                            aria-label={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-                        >
-                            <FiSidebar/>
-                        </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                        {isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-                    </TooltipContent>
-                </Tooltip>
+          <DropdownMenuItem className="cursor-pointer rounded-lg p-2.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">
+            <LuBell className="mr-2.5 h-4 w-4 text-blue-500" />
+            <div>
+              <div className="font-semibold">{t('notifications') || 'Notifications'}</div>
+              <div className="text-[10px] text-slate-400">Recent academy alerts</div>
+            </div>
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
 
-                <nav className="mx-4 my-8 flex-1" role="navigation">
-                    <SidebarNavItems
-                        navItems={navItems}
-                        pathname={pathname}
-                        hoveredIcon={hoveredIcon}
-                        setHoveredIcon={setHoveredIcon}
-                        isSidebarOpen={isSidebarOpen}
-                    />
-                </nav>
-            </aside>
-        </>
-    );
+        <DropdownMenuSeparator className="my-1.5 dark:bg-slate-800" />
+
+        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 space-y-3">
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <LuSettings className="h-3.5 w-3.5 text-slate-400" />
+            <span>Preferences</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                {t('theme') || 'Theme'}
+              </span>
+              <ThemeToggle />
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                {t('language') || 'Language'}
+              </span>
+              <LanguageSelector />
+            </div>
+          </div>
+        </div>
+
+        <DropdownMenuSeparator className="my-1.5 dark:bg-slate-800" />
+
+        <DropdownMenuItem className="cursor-pointer rounded-lg p-2.5 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30">
+          <LuLogOut className="mr-2.5 h-4 w-4" />
+          <SignOutButton />
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
-// SidebarNavItems Component (Nested in Sidebar)
-function SidebarNavItems({navItems, pathname, hoveredIcon, setHoveredIcon, isSidebarOpen}) {
-    return (
-        <ul>
-            {navItems.map(({href, label, LineIcon, FillIcon}) => {
-                const isActive = pathname === href;
-                return (
-                    <li key={href} className="mb-1.5">
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Link
-                                    href={href}
-                                    className={`flex h-10 min-w-10 items-center transition-all duration-200 ${
-                                        isActive
-                                            ? 'rounded-md bg-gradient-to-r from-amber-400 to-orange-500 p-2 font-semibold'
-                                            : 'rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-black dark:text-slate-50 dark:hover:bg-slate-600'
-                                    } ${isSidebarOpen ? 'justify-start' : 'justify-center'}`}
-                                    onMouseEnter={() => setHoveredIcon(href)}
-                                    onMouseLeave={() => setHoveredIcon(null)}
-                                    aria-current={isActive ? 'page' : undefined}
-                                >
-                                    {isSidebarOpen ? (
-                                        <span className="flex flex-row items-center space-x-2">
-                      {isActive ? <FillIcon aria-hidden="true"/> : <LineIcon aria-hidden="true"/>}
-                                            <span className="text-sm">{label}</span>
-                    </span>
-                                    ) : (
-                                        <span
-                                            className={`border border-transparent transition-transform duration-200 ${
-                                                hoveredIcon === href ? 'scale-110' : ''
-                                            }`}
-                                        >
-                      {isActive || hoveredIcon === href ? (
-                          <FillIcon aria-hidden="true"/>
-                      ) : (
-                          <LineIcon aria-hidden="true"/>
-                      )}
-                    </span>
-                                    )}
-                                </Link>
-                            </TooltipTrigger>
-                            {!isSidebarOpen && (
-                                <TooltipContent side="right" sideOffset={10}>
-                                    {label}
-                                </TooltipContent>
-                            )}
-                        </Tooltip>
-                    </li>
-                );
-            })}
-        </ul>
-    );
+// SidebarNavItems Component
+function SidebarNavItems({ navItems, pathname, hoveredIcon, setHoveredIcon, isSidebarOpen }) {
+  return (
+    <ul className="space-y-1.5">
+      {navItems.map(({ href, label, LineIcon, FillIcon }) => {
+        const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
+        return (
+          <li key={href}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  href={href}
+                  className={cn(
+                    'group relative flex h-10 items-center rounded-xl px-3 font-medium transition-all duration-200',
+                    isActive
+                      ? 'bg-amber-500/15 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 font-semibold'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100',
+                    isSidebarOpen ? 'justify-start gap-3' : 'justify-center'
+                  )}
+                  onMouseEnter={() => setHoveredIcon?.(href)}
+                  onMouseLeave={() => setHoveredIcon?.(null)}
+                  aria-current={isActive ? 'page' : undefined}
+                >
+                  {/* Active highlight bar on left */}
+                  {isActive && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-amber-500" />
+                  )}
+
+                  <span className="shrink-0 transition-transform duration-200 group-hover:scale-110">
+                    {isActive || hoveredIcon === href ? (
+                      <FillIcon className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                    ) : (
+                      <LineIcon className="h-5 w-5 text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-100" />
+                    )}
+                  </span>
+
+                  {isSidebarOpen && <span className="text-sm truncate">{label}</span>}
+                </Link>
+              </TooltipTrigger>
+              {!isSidebarOpen && (
+                <TooltipContent side="right" sideOffset={12} className="font-semibold text-xs">
+                  {label}
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </li>
+        );
+      })}
+    </ul>
+  );
 }

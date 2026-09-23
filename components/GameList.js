@@ -1,155 +1,277 @@
 'use client';
-import {useEffect, useState} from 'react';
-import {Separator} from '@/components/ui/separator';
+
+import { useEffect, useState } from 'react';
 import Loader from '@/components/Loader';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Button } from '@/components/ui/button';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogTitle,
-    AlertDialogTrigger
-} from "@/components/ui/alert-dialog";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
-    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
-import {Button} from "@/components/ui/button";
-import {LuMoreHorizontal} from "react-icons/lu";
-import {useRouter} from "next/navigation";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { LuMoreHorizontal } from 'react-icons/lu';
+import { Trophy, Calendar, MapPin, Edit3, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function GameList() {
-    const [games, setGames] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const router = useRouter();
+  const [games, setGames] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const router = useRouter();
 
-    useEffect(() => {
-        const fetchGames = async () => {
-            try {
-                const response = await fetch('/api/games');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch games');
-                }
-                const data = await response.json();
-                setGames(data.sort((a, b) => new Date(b.date) - new Date(a.date)));
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchGames();
-    }, []);
+  const fetchGames = async () => {
+    try {
+      setLoading(true);
+      // Try /api/admin/games first
+      let res = await fetch('/api/admin/games');
+      let data = [];
 
-    const today = new Date();
-    const pastGames = games.filter(game => new Date(game.date) < today);
-    const futureGames = games.filter(game => new Date(game.date) >= today);
+      if (res.ok) {
+        data = await res.json();
+      }
 
-    const handleEdit = (game) => {
-        router.push(`/dashboard/games/edit/${game._id}`);
+      // If no games from /api/admin/games, fetch from /api/admin/events
+      if (!Array.isArray(data) || data.length === 0) {
+        const eventsRes = await fetch('/api/admin/events');
+        if (eventsRes.ok) {
+          const eventsData = await eventsRes.json();
+          if (Array.isArray(eventsData)) {
+            data = eventsData
+              .filter((e) => e.eventType === 'game')
+              .map((e) => ({
+                _id: e._id,
+                date: e.startTime,
+                startTime: new Date(e.startTime).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                }),
+                team: e.team || { name: 'BBA Team' },
+                opponent: e.opponent || 'Opponent',
+                venue: e.venue?.name || e.location || 'BBA Court',
+                location: e.isAwayGame ? 'Away' : 'Home',
+                score: {
+                  ourTeam: e.gameResult?.homeTeamScore ?? null,
+                  opponentTeam: e.gameResult?.awayTeamScore ?? null,
+                },
+              }));
+          }
+        }
+      }
+
+      setGames(Array.isArray(data) ? data.sort((a, b) => new Date(b.date) - new Date(a.date)) : []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const renderGameCard = (game, isFuture) => {
-        const isHomeGame = game.location === 'Home';
-        const ourTeamScore = game.score.ourTeam;
-        const opponentScore = game.score.opponentTeam;
-        const isWinner = ourTeamScore > opponentScore;
-        const badgeColor = isWinner ? 'bg-green-500' : 'bg-red-500';
+  useEffect(() => {
+    fetchGames();
+  }, []);
 
-        return (
-            <div key={game._id}
-                 className="flex flex-col min-h-20 dark:bg-slate-950 border dark:border-slate-800 dark:text-slate-50 px-4 py-2  space-y-1 rounded-lg shadow-sm">
-                <div className="flex justify-between items-center">
-                    <div>
-                        <span
-                            className="flex flex-nowrap justify-between text-sm text-gray-400">{new Date(game.date).toLocaleDateString('ka-GE', {
-                            month: 'short', day: 'numeric'
-                        })}
-                            {' '}&bull;{' '}
-                            {game.startTime}
-                        </span>
-                    </div>
-                    <p className="w-1/3 text-sm text-gray-400">{game.venue}</p>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0 text-gray-400">
-                                <LuMoreHorizontal className="h-4 w-4"/>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel className='flex justify-center'>Actions</DropdownMenuLabel>
-                            <DropdownMenuSeparator/>
-                            <DropdownMenuItem>
-                                <Button onClick={() => handleEdit(game)} variant="ghost"
-                                        className='w-full'>Edit</Button>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" className='w-full'>Delete</Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogTitle className="dark:text-slate-50">
-                                            Are you absolutely sure?
-                                        </AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            This action cannot be undone. This will permanently delete the game.
-                                        </AlertDialogDescription>
-                                        <AlertDialogFooter className="flex justify-end space-x-4">
-                                            <AlertDialogCancel className="dark:text-slate-50">Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => console.log("Delete")}>
-                                                Delete
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-                {/*<Separator className='dark:bg-slate-800'/>*/}
-                <div className="flex justify-evenly items-center">
-                    <span className='flex justify-between w-1/3'>
-                        <h2 className={`${isHomeGame ? 'font-bold' : ''} dark:text-slate-50`}>{game.team.name}</h2>
-                    </span>
-                    <div className='w-1/3 flex justify-center'>
-                        {!isFuture && <span className={`${badgeColor} px-1 py-0.5 rounded-md`}>
-                    <span className='dark:text-slate-50 w-1/3'>{ourTeamScore}-</span>
-                         <span className='dark:text-slate-50'>{opponentScore}</span>
-                    </span>}
-                    </div>
-                    <span className='flex w-1/3 justify-end'>
-                        <h2 className={`${!isHomeGame ? 'font-bold' : ''} dark:text-slate-50`}>{game.opponent}</h2>
-                    </span>
-                </div>
-            </div>
-        );
-    };
+  const today = new Date();
+  const pastGames = games.filter(
+    (g) => g.score?.ourTeam !== null && g.score?.opponentTeam !== null
+  );
+  const futureGames = games.filter(
+    (g) => g.score?.ourTeam === null || g.score?.opponentTeam === null
+  );
 
-    if (loading) {
-        return <Loader/>;
-    }
+  const handleEdit = (game) => {
+    router.push(`/dashboard/admin/games/edit/${game._id}`);
+  };
 
-    if (error) {
-        return <div className="p-4 text-red-500">{error}</div>;
-    }
+  const renderGameCard = (game, isPast) => {
+    const isHome = game.location === 'Home';
+    const ourScore = game.score?.ourTeam;
+    const oppScore = game.score?.opponentTeam;
+    const isWin = ourScore !== null && oppScore !== null && ourScore > oppScore;
+    const isTie = ourScore !== null && oppScore !== null && ourScore === oppScore;
 
-    return (<div className="p-4 max-w-4xl mx-auto flex flex-col md:flex-row space-y-8 md:space-y-0 md:space-x-8">
-        <div className="flex-1">
-            <h1 className="text-2xl font-bold mb-4">Results</h1>
-            <div className="space-y-4">
-                {pastGames.length > 0 ? pastGames.map(game => renderGameCard(game, false)) : <p>No past games.</p>}
-            </div>
+    return (
+      <div
+        key={game._id}
+        className="group relative flex flex-col justify-between rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-500/30 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/90"
+      >
+        {/* Header row: Date, Venue, Status, Actions */}
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <span className="font-semibold text-slate-700 dark:text-slate-200">
+              {new Date(game.date).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })}
+            </span>
+            <span>&bull;</span>
+            <span className="font-mono">{game.startTime || '18:00'}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+              {game.location || 'Home'}
+            </span>
+
+            {isPast ? (
+              <StatusBadge
+                status="completed"
+                label={isWin ? 'Won' : isTie ? 'Draw' : 'Lost'}
+                variant={isWin ? 'success' : isTie ? 'warning' : 'destructive'}
+              />
+            ) : (
+              <StatusBadge status="scheduled" label="Scheduled" variant="info" />
+            )}
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-slate-400">
+                  <LuMoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-36 rounded-xl">
+                <DropdownMenuItem onClick={() => handleEdit(game)} className="cursor-pointer text-xs">
+                  <Edit3 className="mr-2 h-3.5 w-3.5" /> Edit Match
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
-        <Separator orientation="vertical" className="h-auto dark:bg-slate-800"/>
-        <div className="flex-1">
-            <h1 className="text-2xl font-bold mb-4">Fixtures</h1>
-            <div className="space-y-4">
-                {futureGames.length > 0 ? futureGames.map(game => renderGameCard(game, true)) :
-                    <p>No upcoming games.</p>}
-            </div>
+
+        {/* Teams & Score Row */}
+        <div className="py-4 flex items-center justify-between gap-4">
+          {/* Home / Academy Team */}
+          <div className="flex-1 text-left">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              {isHome ? 'Home' : 'Away'}
+            </p>
+            <p className="text-base font-bold text-slate-900 dark:text-slate-100 truncate">
+              {game.team?.name || 'BBA Team'}
+            </p>
+          </div>
+
+          {/* Score / VS Center */}
+          <div className="shrink-0 text-center px-4">
+            {isPast ? (
+              <div className="flex items-center gap-2">
+                <span className="text-2xl font-bold font-mono text-slate-900 dark:text-slate-50">
+                  {ourScore}
+                </span>
+                <span className="text-slate-400 font-bold">-</span>
+                <span className="text-2xl font-bold font-mono text-slate-900 dark:text-slate-50">
+                  {oppScore}
+                </span>
+              </div>
+            ) : (
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
+                VS
+              </span>
+            )}
+          </div>
+
+          {/* Opponent Team */}
+          <div className="flex-1 text-right">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              {isHome ? 'Away' : 'Home'}
+            </p>
+            <p className="text-base font-bold text-slate-900 dark:text-slate-100 truncate">
+              {game.opponent || 'Opponent'}
+            </p>
+          </div>
         </div>
-    </div>);
+
+        {/* Footer Venue */}
+        <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center gap-1.5 text-xs text-slate-400">
+          <MapPin className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">{game.venue || 'BBA Main Court'}</span>
+        </div>
+      </div>
+    );
+  };
+
+  if (loading) {
+    return <Loader />;
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300">
+        Error loading games: {error}
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      {/* Upcoming Fixtures */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 pb-2 border-b border-slate-200/80 dark:border-slate-800">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
+            <Calendar className="h-4 w-4" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+              Upcoming Fixtures
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Scheduled regular and tournament games
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {futureGames.length > 0 ? (
+            futureGames.map((game) => renderGameCard(game, false))
+          ) : (
+            <EmptyState
+              icon={Calendar}
+              title="No upcoming fixtures"
+              description="Schedule the next match for your academy squads."
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Match Results */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 pb-2 border-b border-slate-200/80 dark:border-slate-800">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <Trophy className="h-4 w-4" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+              Match Results
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Final scores and box results
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {pastGames.length > 0 ? (
+            pastGames.map((game) => renderGameCard(game, true))
+          ) : (
+            <EmptyState
+              icon={Trophy}
+              title="No match results yet"
+              description="Completed games with final scores will be displayed here."
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }

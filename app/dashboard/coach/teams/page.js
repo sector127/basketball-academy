@@ -1,100 +1,101 @@
-'use client'
-import React, {useEffect, useState} from 'react';
-import DashboardLayout from "@/components/DashboardLayout";
-import {useTranslations} from "next-intl";
-import Card from "@/components/Card";
-import Link from "next/link";
-import Loader from "@/components/Loader";
-import {motion} from "framer-motion";
+'use client';
 
-export default function TeamsPage() {
-    const t = useTranslations('Teams');
-    const [teams, setTeams] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+import React, { useEffect, useState } from 'react';
+import DashboardLayout from '@/components/DashboardLayout';
+import { PageHeader } from '@/components/ui/page-header';
+import { EntityCard } from '@/components/ui/entity-card';
+import { EmptyState } from '@/components/ui/empty-state';
+import Loader from '@/components/Loader';
+import { motion } from 'framer-motion';
+import { Shield, Users, ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
-    useEffect(() => {
-        async function fetchTeams() {
-            try {
-                const response = await fetch('/api/coach/teams');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch teams');
-                }
-                const data = await response.json();
-                if (Array.isArray(data)) {
-                    setTeams(data);
-                } else {
-                    console.error('Expected an array of teams, but received:', data);
-                    setTeams([]);
-                }
-            } catch (error) {
-                console.error('Error fetching teams:', error);
-                setError(error.message);
-            } finally {
-                setLoading(false);
-            }
+export default function CoachTeamsPage() {
+  const [teams, setTeams] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function fetchTeams() {
+      try {
+        const response = await fetch('/api/coach/teams');
+        if (!response.ok) {
+          throw new Error('Failed to fetch teams');
         }
-
-        fetchTeams()
-    }, []);
-
-
-    if (loading) {
-        return (
-            <DashboardLayout>
-                <motion.div
-                    initial={{opacity: 0}}
-                    animate={{opacity: 1}}
-                    transition={{duration: 0.5}}
-                >
-                    <h1 className="text-3xl font-bold mb-8">{t('title')}</h1>
-                    <Loader/>
-                    <p>{t('loadingTeams')}</p>
-                </motion.div>
-            </DashboardLayout>
-        );
+        const data = await response.json();
+        setTeams(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
     }
 
-    if (error) {
-        return (
-            <DashboardLayout>
-                <motion.div
-                    initial={{opacity: 0}}
-                    animate={{opacity: 1}}
-                    transition={{duration: 0.5}}
-                >
-                    <h1 className="text-3xl font-bold mb-8">{t('title')}</h1>
-                    <p className="text-red-500">Error: {error}</p>
-                </motion.div>
-            </DashboardLayout>
-        );
-    }
+    fetchTeams();
+  }, []);
 
+  if (loading) {
     return (
-        <DashboardLayout>
-            <motion.div
-                initial={{opacity: 0, y: 20}}
-                animate={{opacity: 1, y: 0}}
-                transition={{duration: 0.5}}
-            >
-                <h1 className="text-3xl font-bold mb-8">{t('title')}</h1>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
-                    {teams.length > 0 ? (
-                        teams.map((team) => (
-                            <Link key={team._id} href={`/dashboard/coach/teams/${team._id}`}>
-                                <motion.div
-                                    whileHover={{scale: 1.05}}
-                                    whileTap={{scale: 0.95}}
-                                >
-                                    <Card title={team.name} description={team.description}/>
-                                </motion.div>
-                            </Link>
-                        ))
-                    ) : (
-                        <p>{t('noTeams')}</p>
-                    )}
-                </div>
-            </motion.div>
-        </DashboardLayout>
+      <DashboardLayout>
+        <PageHeader title="My Teams" subtitle="Competitive basketball squads under your guidance" />
+        <Loader />
+      </DashboardLayout>
     );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <PageHeader title="My Teams" subtitle="Competitive basketball squads under your guidance" />
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300">
+          Error: {error}
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <PageHeader
+        title="My Teams"
+        subtitle="Competitive academy teams, tactical court setups, and roster management"
+        badge={`${teams.length} Assigned Teams`}
+        icon={Shield}
+      />
+
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        {teams.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {teams.map((team) => (
+              <EntityCard
+                key={team._id}
+                title={team.name}
+                subtitle={team.description}
+                badge="Active Roster"
+                href={`/dashboard/coach/teams/${team._id}`}
+                actions={
+                  <Button asChild size="sm" className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold text-xs shadow-sm w-full">
+                    <Link href={`/dashboard/coach/teams/${team._id}`}>
+                      View Roster & Court <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                    </Link>
+                  </Button>
+                }
+              />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon={Shield}
+            title="No teams assigned"
+            description="You do not have any teams assigned to your coach profile yet."
+          />
+        )}
+      </motion.div>
+    </DashboardLayout>
+  );
 }
