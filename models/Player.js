@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import Team from '@/models/Team';
+import Team from './Team.js';
 
 const PlayerSchema = new mongoose.Schema({
     profilePicture: {
