@@ -1,17 +1,24 @@
-import NextAuth, {DefaultSession} from "next-auth/next";
+import NextAuth, { type DefaultSession } from 'next-auth';
 
-declare module "next-auth" {
-    interface Session {
-        authTime?: number // ms timestamp of sign-in
-        user?: {
-            name?: string | null
-            email?: string | null
-            image?: string | null
-            role?: string // Add your role property here
-        } & DefaultSession["user"]
-    }
+declare module 'next-auth' {
+  interface Session {
+    authTime?: number;
+    user: {
+      id?: string | null;
+      role?: string | null;
+    } & DefaultSession['user'];
+  }
 
-    interface User {
-        role?: string // And here for the User type
-    }
+  interface User {
+    id?: string;
+    role?: string;
+  }
+}
+
+declare module 'next-auth/jwt' {
+  interface JWT {
+    sub?: string;
+    role?: string;
+    authTime?: number;
+  }
 }

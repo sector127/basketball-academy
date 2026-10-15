@@ -34,28 +34,68 @@ interface GameBoxScoreEditorProps {
 
 const fetcher = (url: string) => fetch(url).then((res) => (res.ok ? res.json() : null));
 
+interface PeriodScore {
+  period: number;
+  homeScore: number;
+  awayScore: number;
+}
+
+interface TeamPlayer {
+  _id: string;
+  name: string;
+  lastname: string;
+  jerseyNum: number | string;
+  position: string;
+}
+
+interface BoxScoreEntry {
+  player?: { _id?: string } | string;
+  minutesPlayed?: number;
+  points?: number;
+  assists?: number;
+  rebounds?: number;
+  steals?: number;
+  blocks?: number;
+  turnovers?: number;
+  fouls?: number;
+}
+
+interface GameResultData {
+  gameResult?: {
+    status?: string;
+    homeTeamScore?: number;
+    awayTeamScore?: number;
+    periodScores?: PeriodScore[];
+    boxScores?: BoxScoreEntry[];
+  };
+}
+
+interface TeamDataResponse {
+  data?: TeamPlayer[];
+}
+
 export default function GameBoxScoreEditor({ gameId, teamId, opponentName = 'Opponent' }: GameBoxScoreEditorProps) {
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
 
   // Fetch existing game result
-  const { data: resultData, isLoading: resultLoading } = useSWR(
+  const { data: resultData, isLoading: resultLoading } = useSWR<GameResultData>(
     gameId ? `/api/admin/games/${gameId}/result` : null,
     fetcher
   );
 
   // Fetch team players
-  const { data: teamData } = useSWR(
+  const { data: teamData } = useSWR<TeamDataResponse>(
     teamId ? `/api/admin/teams/${teamId}` : null,
     fetcher
   );
 
-  const players = Array.isArray(teamData?.data) ? teamData.data : [];
+  const players: TeamPlayer[] = Array.isArray(teamData?.data) ? teamData.data : [];
 
   const [status, setStatus] = useState('scheduled');
   const [homeScore, setHomeScore] = useState(0);
   const [awayScore, setAwayScore] = useState(0);
-  const [periodScores, setPeriodScores] = useState([
+  const [periodScores, setPeriodScores] = useState<PeriodScore[]>([
     { period: 1, homeScore: 0, awayScore: 0 },
     { period: 2, homeScore: 0, awayScore: 0 },
     { period: 3, homeScore: 0, awayScore: 0 },
@@ -75,9 +115,9 @@ export default function GameBoxScoreEditor({ gameId, teamId, opponentName = 'Opp
       }
 
       if (Array.isArray(res.boxScores)) {
-        const statsMap = {};
-        res.boxScores.forEach((b) => {
-          const pId = b.player?._id || b.player;
+        const statsMap: Record<string, PlayerStat> = {};
+        res.boxScores.forEach((b: BoxScoreEntry) => {
+          const pId = typeof b.player === 'object' && b.player ? b.player._id : (typeof b.player === 'string' ? b.player : undefined);
           if (pId) {
             statsMap[pId] = {
               minutesPlayed: b.minutesPlayed || 0,
@@ -96,7 +136,7 @@ export default function GameBoxScoreEditor({ gameId, teamId, opponentName = 'Opp
     }
   }, [resultData]);
 
-  const handlePeriodChange = (index, field, value) => {
+  const handlePeriodChange = (index: number, field: 'homeScore' | 'awayScore', value: string) => {
     const num = Math.max(0, parseInt(value, 10) || 0);
     const updated = [...periodScores];
     updated[index] = { ...updated[index], [field]: num };
@@ -175,10 +215,10 @@ export default function GameBoxScoreEditor({ gameId, teamId, opponentName = 'Opp
         description: 'Match result and player performance stats recorded.',
         variant: 'default',
       });
-    } catch (err) {
+    } catch (err: unknown) {
       toast({
         title: 'Save Failed',
-        description: err.message,
+        description: err instanceof Error ? err.message : 'An unexpected error occurred',
         variant: 'destructive',
       });
     } finally {

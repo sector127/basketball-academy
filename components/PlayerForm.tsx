@@ -53,8 +53,14 @@ const GUARDIANS = ['Mother', 'Father', 'Other'];
 
 const fetcher = (url: string) => fetch(url).then((res) => (res.ok ? res.json() : []));
 
+export interface PlayerInitialData extends Partial<PlayerFormData> {
+  _id?: string;
+  profilePicture?: string;
+  team?: { _id?: string } | string;
+}
+
 interface PlayerFormProps {
-  initialData?: any;
+  initialData?: PlayerInitialData | null;
   isEditing?: boolean;
   playerId?: string;
 }
@@ -106,7 +112,9 @@ export default function PlayerForm({ initialData, isEditing = false, playerId }:
         height: initialData.height || 180,
         position: initialData.position || '',
         jerseyNum: initialData.jerseyNum ?? 0,
-        teamId: initialData.team?._id || initialData.team || '',
+        teamId: typeof initialData.team === 'object' && initialData.team !== null && '_id' in initialData.team
+          ? initialData.team._id || ''
+          : (typeof initialData.team === 'string' ? initialData.team : ''),
         tel: initialData.tel || '',
         address: initialData.address || '',
         guardian: initialData.guardian || 'Mother',
@@ -167,11 +175,12 @@ export default function PlayerForm({ initialData, isEditing = false, playerId }:
 
       router.push('/dashboard/admin/players');
       router.refresh();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error saving player:', err);
+      const message = err instanceof Error ? err.message : 'An error occurred while saving the player profile.';
       toast({
         title: 'Error',
-        description: err.message || 'An error occurred while saving the player profile.',
+        description: message,
         variant: 'destructive',
       });
     } finally {

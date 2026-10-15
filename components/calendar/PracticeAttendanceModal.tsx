@@ -26,6 +26,21 @@ interface PracticeAttendanceModalProps {
   eventTitle?: string;
 }
 
+export type AttendanceStatus = 'present' | 'absent' | 'excused' | 'injured';
+
+export interface AttendancePlayerInfo {
+  jerseyNum?: number | string;
+  name?: string;
+  lastname?: string;
+  position?: string;
+}
+
+export interface AttendanceRecordItem {
+  player?: AttendancePlayerInfo;
+  status: AttendanceStatus;
+  notes?: string;
+}
+
 export default function PracticeAttendanceModal({
   eventId,
   isOpen,
@@ -35,12 +50,12 @@ export default function PracticeAttendanceModal({
   const t = useTranslations('Calendar');
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
-  const { data, isLoading } = useSWR(
+  const { data, isLoading } = useSWR<{ attendance?: AttendanceRecordItem[] }>(
     isOpen && eventId ? `/api/admin/events/${eventId}/attendance` : null,
     fetcher
   );
 
-  const [records, setRecords] = useState<any[]>([]);
+  const [records, setRecords] = useState<AttendanceRecordItem[]>([]);
 
   useEffect(() => {
     if (data?.attendance) {
@@ -48,7 +63,7 @@ export default function PracticeAttendanceModal({
     }
   }, [data]);
 
-  const updateStatus = (index: number, status: 'present' | 'absent' | 'excused' | 'injured') => {
+  const updateStatus = (index: number, status: AttendanceStatus) => {
     const updated = [...records];
     updated[index] = { ...updated[index], status };
     setRecords(updated);
@@ -80,10 +95,10 @@ export default function PracticeAttendanceModal({
         variant: 'default',
       });
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({
         title: 'Save Failed',
-        description: err.message,
+        description: err instanceof Error ? err.message : 'Unknown error',
         variant: 'destructive',
       });
     } finally {

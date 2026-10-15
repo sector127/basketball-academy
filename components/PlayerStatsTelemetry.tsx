@@ -14,9 +14,53 @@ interface PlayerStatsTelemetryProps {
   playerId: string;
 }
 
+export interface RecentGameStat {
+  gameId?: unknown;
+  date?: string | Date;
+  opponent: string;
+  teamName?: string;
+  ourScore?: number;
+  opponentScore?: number;
+  stats: {
+    minutes: number;
+    points: number;
+    rebounds: number;
+    assists: number;
+    steals: number;
+    blocks: number;
+    turnovers: number;
+    fouls: number;
+  };
+}
+
+export interface PlayerStatsResponse {
+  success: boolean;
+  gamesPlayed: number;
+  averages: {
+    ppg: number;
+    rpg: number;
+    apg: number;
+    spg: number;
+    bpg: number;
+    topg: number;
+    mpg: number;
+  };
+  totals: {
+    points: number;
+    rebounds: number;
+    assists: number;
+    steals: number;
+    blocks: number;
+    turnovers: number;
+    fouls: number;
+    minutesPlayed: number;
+  };
+  recentGames: RecentGameStat[];
+}
+
 export default function PlayerStatsTelemetry({ playerId }: PlayerStatsTelemetryProps) {
   const t = useTranslations('Players');
-  const { data: statsData, error, isLoading } = useSWR(
+  const { data: statsData, error, isLoading } = useSWR<PlayerStatsResponse>(
     playerId ? `/api/admin/players/${playerId}/stats` : null,
     fetcher
   );
@@ -138,7 +182,7 @@ export default function PlayerStatsTelemetry({ playerId }: PlayerStatsTelemetryP
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-mono">
-              {recentGames.map((game: any, idx: number) => {
+              {recentGames.map((game: RecentGameStat, idx: number) => {
                 const isWin = game.ourScore > game.opponentScore;
                 const isTie = game.ourScore === game.opponentScore;
                 return (

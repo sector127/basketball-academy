@@ -25,21 +25,40 @@ import Link from 'next/link';
 import Loader from '@/components/Loader';
 import MyPlayersSection from '@/components/portal/MyPlayersSection';
 
-const fetcher = (url: string) => fetch(url).then((res) => (res.ok ? res.json() : []));
+interface GuardianPortalEvent {
+  _id: string;
+  eventType: string;
+  title: string;
+  startTime?: string | Date;
+  endTime?: string | Date;
+  venue?: { name?: string; address?: string };
+  location?: string;
+  team?: { name?: string };
+  opponent?: string;
+}
+
+interface GuardianPortalCoach {
+  _id: string;
+  name: string;
+  lastName: string;
+  email: string;
+}
+
+const fetcher = <T,>(url: string): Promise<T[]> => fetch(url).then((res) => (res.ok ? res.json() : []));
 
 export default function GuardianPortalPage() {
   const t = useTranslations('GuardianPortal');
-  const { data: eventsData, isLoading: eventsLoading } = useSWR('/api/admin/events', fetcher);
+  const { data: eventsData, isLoading: eventsLoading } = useSWR<GuardianPortalEvent[]>('/api/admin/events', fetcher);
   const { data: venuesData } = useSWR('/api/admin/venues', fetcher);
-  const { data: coachesData } = useSWR('/api/admin/coaches', fetcher);
+  const { data: coachesData } = useSWR<GuardianPortalCoach[]>('/api/admin/coaches', fetcher);
   const events = Array.isArray(eventsData) ? eventsData : [];
   const venues = Array.isArray(venuesData) ? venuesData : [];
   const coaches = Array.isArray(coachesData) ? coachesData : [];
 
   const now = new Date();
   const upcomingEvents = events
-    .filter((e) => new Date(e.endTime || e.startTime) >= now)
-    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    .filter((e) => new Date(e.endTime || e.startTime || now) >= now)
+    .sort((a, b) => new Date(a.startTime || now).getTime() - new Date(b.startTime || now).getTime());
 
   return (
     <DashboardLayout>
@@ -123,7 +142,7 @@ export default function GuardianPortalPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {upcomingEvents.slice(0, 6).map((ev: any) => {
+                {upcomingEvents.slice(0, 6).map((ev: GuardianPortalEvent) => {
                   const isGame = ev.eventType === 'game';
                   const dateStr = ev.startTime
                     ? new Date(ev.startTime).toLocaleDateString('en-US', {
@@ -204,7 +223,7 @@ export default function GuardianPortalPage() {
             </p>
 
             <div className="space-y-3 pt-1">
-              {coaches.slice(0, 3).map((coach: any) => (
+              {coaches.slice(0, 3).map((coach: GuardianPortalCoach) => (
                 <div
                   key={coach._id}
                   className="p-3 rounded-xl border border-slate-100 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-800/40 space-y-1"

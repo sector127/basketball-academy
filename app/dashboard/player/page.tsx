@@ -23,19 +23,31 @@ import Link from 'next/link';
 import Loader from '@/components/Loader';
 import MyPlayersSection from '@/components/portal/MyPlayersSection';
 
-const fetcher = (url: string) => fetch(url).then((res) => (res.ok ? res.json() : []));
+interface PlayerPortalEvent {
+  _id: string;
+  eventType: string;
+  title: string;
+  startTime?: string | Date;
+  endTime?: string | Date;
+  venue?: { name?: string; address?: string };
+  location?: string;
+  team?: { name?: string };
+  opponent?: string;
+}
+
+const fetcher = <T,>(url: string): Promise<T[]> => fetch(url).then((res) => (res.ok ? res.json() : []));
 
 export default function PlayerPortalPage() {
   const t = useTranslations('PlayerPortal');
-  const { data: eventsData, isLoading: eventsLoading } = useSWR('/api/admin/events', fetcher);
+  const { data: eventsData, isLoading: eventsLoading } = useSWR<PlayerPortalEvent[]>('/api/admin/events', fetcher);
   const { data: teamsData } = useSWR('/api/admin/teams', fetcher);
   const events = Array.isArray(eventsData) ? eventsData : [];
   const teams = Array.isArray(teamsData) ? teamsData : [];
 
   const now = new Date();
   const upcomingEvents = events
-    .filter((e) => new Date(e.endTime || e.startTime) >= now)
-    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    .filter((e) => new Date(e.endTime || e.startTime || now) >= now)
+    .sort((a, b) => new Date(a.startTime || now).getTime() - new Date(b.startTime || now).getTime());
 
   const upcomingGames = upcomingEvents.filter((e) => e.eventType === 'game');
   const upcomingPractices = upcomingEvents.filter((e) => e.eventType === 'practice' || e.eventType === 'individualTraining');
@@ -129,7 +141,7 @@ export default function PlayerPortalPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {upcomingEvents.slice(0, 6).map((ev: any) => {
+                {upcomingEvents.slice(0, 6).map((ev: PlayerPortalEvent) => {
                   const isGame = ev.eventType === 'game';
                   const dateStr = ev.startTime
                     ? new Date(ev.startTime).toLocaleDateString('en-US', {
