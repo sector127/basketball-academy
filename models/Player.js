@@ -73,10 +73,37 @@ const PlayerSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    injuryStatus: {
+        type: String,
+        enum: ['Healthy', 'Questionable', 'Doubtful', 'Out - Injured'],
+        default: 'Healthy',
+    },
+    injuryNotes: {
+        type: String,
+        default: '',
+    },
 }, {
     toJSON: {virtuals: true},
     toObject: {virtuals: true}
 });
+
+// Accept phone numbers as people type them ("+995 599 00-00-00") and store them
+// in a canonical form ("+995599000000") so they pass validation and compare cleanly
+PlayerSchema.pre('validate', function (next) {
+    for (const field of ['tel', 'guardianTel']) {
+        if (typeof this[field] === 'string') {
+            this[field] = this[field].replace(/[\s\-().]/g, '');
+        }
+    }
+    next();
+});
+
+// One starter per position per team. With five positions this also caps the
+// starting five, and the database enforces it even for simultaneous requests.
+PlayerSchema.index(
+    {team: 1, position: 1},
+    {unique: true, partialFilterExpression: {isFirstTeam: true}, name: 'one_starter_per_position'}
+);
 
 // Virtual for player's age
 PlayerSchema.virtual('age').get(function () {

@@ -30,14 +30,19 @@ export async function middleware(req: NextRequest) {
 
     // Define role-based access rules
     const roleAccess: Record<string, RegExp> = {
-        admin: /^\/dashboard(\/.*)?$/, // Admins can access everything under /dashboard
-        coach: /^\/dashboard\/coach(?:\/.*)?$/, // Coaches can access only /dashboard/coach/*
-        player: /^\/dashboard\/player(?:\/.*)?$/, // Players can access only /dashboard/player/*
-        guardian: /^\/dashboard\/guardian(?:\/.*)?$/, // Guardians can access only /dashboard/guardian/*
+        admin: /^\/dashboard(\/.*)?$/,
+        // Staff have read-only access to the admin overview pages (see navConfig.staff);
+        // create/edit pages are admin-only. The universal /dashboard/calendar and
+        // /dashboard/games pages just redirect to the admin versions.
+        staff: /^\/dashboard(?:\/admin)?(?:\/(?:teams|games|calendar|venues)(?:\/(?!create(?:\/|$)|edit(?:\/|$))[^/]+)*)?\/?$/,
+        coach: /^\/dashboard\/coach(?:\/.*)?$/,
+        player: /^\/dashboard\/player(?:\/.*)?$/,
+        guardian: /^\/dashboard\/guardian(?:\/.*)?$/,
     };
 
-    // Auto-redirect non-admin users to their role-specific dashboard paths
-    if (userRole && userRole !== "admin" && !req.nextUrl.pathname.startsWith(`/dashboard/${userRole}`)) {
+    // Auto-redirect roles that have their own dashboard section to their role-specific paths
+    const rolesWithOwnSection = ["coach", "player", "guardian"];
+    if (userRole && rolesWithOwnSection.includes(userRole) && !req.nextUrl.pathname.startsWith(`/dashboard/${userRole}`)) {
         const subPath = req.nextUrl.pathname.replace(/^\/dashboard\/?/, "");
         if (!subPath) {
             return NextResponse.redirect(new URL(`/dashboard/${userRole}`, req.url));
@@ -52,17 +57,14 @@ export async function middleware(req: NextRequest) {
 
     // Check if user's role is defined in access rules
     if (!userRole || !roleAccess[userRole]) {
-        console.log("Unauthorized - Role Not Found in roleAccess");
         return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
     // Check if user's role allows access to the requested path
     if (!roleAccess[userRole].test(req.nextUrl.pathname)) {
-        console.log("Unauthorized - Path Not Allowed");
         return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    console.log("Access Granted");
     return NextResponse.next();
 }
 

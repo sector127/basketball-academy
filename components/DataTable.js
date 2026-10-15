@@ -34,9 +34,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useRouter, usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Search, SlidersHorizontal, Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
-
 export function DataTable({ columns, data = [], onDataChange, context, onAdd }) {
+  const t = useTranslations("Players");
   const [columnFilters, setColumnFilters] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState({});
   const [rowSelection, setRowSelection] = useState({});
@@ -120,7 +121,7 @@ export function DataTable({ columns, data = [], onDataChange, context, onAdd }) 
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
-            placeholder="Search by name..."
+            placeholder={t("searchByName")}
             value={table.getColumn("fullName")?.getFilterValue() ?? ""}
             onChange={(event) =>
               table.getColumn("fullName")?.setFilterValue(event.target.value)
@@ -137,7 +138,7 @@ export function DataTable({ columns, data = [], onDataChange, context, onAdd }) 
               onClick={() => setOpenDialog(true)}
               className="text-xs font-semibold h-9 shadow-sm"
             >
-              <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Disable ({selectedCount})
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" /> {t("disableSelected", { count: selectedCount })}
             </Button>
           )}
 
@@ -147,7 +148,7 @@ export function DataTable({ columns, data = [], onDataChange, context, onAdd }) 
               onClick={handleAddClick}
               className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold text-xs h-9 shadow-sm"
             >
-              <Plus className="mr-1.5 h-4 w-4" /> Add Player
+              <Plus className="mr-1.5 h-4 w-4" /> {t("addPlayer")}
             </Button>
           )}
 
@@ -155,7 +156,7 @@ export function DataTable({ columns, data = [], onDataChange, context, onAdd }) 
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-9 text-xs border-slate-200/80 dark:border-slate-800">
                 <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5 text-slate-500" />
-                Columns
+                {t("columns")}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44 rounded-xl">
@@ -181,18 +182,17 @@ export function DataTable({ columns, data = [], onDataChange, context, onAdd }) 
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent className="sm:max-w-[425px] rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Confirm Disable</DialogTitle>
+            <DialogTitle>{t("confirmDisable")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to disable {selectedCount} selected player(s)?
-              Disabled players will be removed from active team rosters.
+              {t("confirmDisableDesc", { count: selectedCount })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="pt-3">
             <Button variant="outline" onClick={() => setOpenDialog(false)}>
-              Cancel
+              {t("cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDisableMany}>
-              Disable Players
+              {t("disablePlayers")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -239,7 +239,7 @@ export function DataTable({ columns, data = [], onDataChange, context, onAdd }) 
                   colSpan={columns.length}
                   className="h-32 text-center text-sm text-slate-500 dark:text-slate-400"
                 >
-                  No players found matching current filters.
+                  {t("noResults")}
                 </TableCell>
               </TableRow>
             )}
@@ -268,7 +268,7 @@ export function DataTable({ columns, data = [], onDataChange, context, onAdd }) 
               disabled={!table.getCanPreviousPage()}
               className="h-8 text-xs px-2.5"
             >
-              <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Previous
+              <ChevronLeft className="h-3.5 w-3.5 mr-1" /> {t("previous")}
             </Button>
             <Button
               variant="outline"
@@ -277,7 +277,7 @@ export function DataTable({ columns, data = [], onDataChange, context, onAdd }) 
               disabled={!table.getCanNextPage()}
               className="h-8 text-xs px-2.5"
             >
-              Next <ChevronRight className="h-3.5 w-3.5 ml-1" />
+              {t("next")} <ChevronRight className="h-3.5 w-3.5 ml-1" />
             </Button>
           </div>
         </div>

@@ -6,6 +6,7 @@
     "strict": false,
     "noEmit": true,
     "incremental": true,
+    "tsBuildInfoFile": ".next/cache/tsbuildinfo",
     "module": "esnext",
     "esModuleInterop": true,
     "moduleResolution": "node",
@@ -17,7 +18,7 @@
         "name": "next"
       }
     ],
-    "target": "ES2017",
+    "target": "ES2022",
     "baseUrl": ".",
     // Add this line
     "paths": {
@@ -32,5 +33,5 @@
     "**/*.tsx",
     "models/User.js"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", ".next"]
 }

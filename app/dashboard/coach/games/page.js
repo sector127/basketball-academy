@@ -5,13 +5,15 @@ import DashboardLayout from '@/components/DashboardLayout';
 import GameList from '@/components/GameList';
 import { PageHeader } from '@/components/ui/page-header';
 import { Trophy } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export default function CoachGamesPage() {
+  const t = useTranslations('Games');
   return (
     <DashboardLayout>
       <PageHeader
-        title="Squad Matches & Fixtures"
-        subtitle="Upcoming championship games, match results, and box score telemetry"
+        title={t('matchCenter')}
+        subtitle={t('matchCenterSubtitle')}
         badge="Competitive Season"
         icon={Trophy}
       />

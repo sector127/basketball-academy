@@ -38,11 +38,11 @@ export function EntityCard({
   className,
   children,
 }: EntityCardProps) {
-  const content = (
+  return (
     <div
       onClick={onClick}
       className={cn(
-        'group relative flex flex-col justify-between overflow-hidden rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all duration-300',
+        'group relative flex flex-col justify-between overflow-hidden rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all duration-300 h-full',
         'hover:-translate-y-1 hover:border-amber-500/30 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/90 dark:hover:border-amber-500/20',
         (href || onClick) && 'cursor-pointer',
         className
@@ -53,7 +53,18 @@ export function EntityCard({
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex-1 min-w-0">
             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors truncate">
-              {title}
+              {href ? (
+                <Link
+                  href={href}
+                  className="focus:outline-none"
+                  tabIndex={actions ? -1 : 0}
+                >
+                  <span className="absolute inset-0" aria-hidden="true" />
+                  {title}
+                </Link>
+              ) : (
+                title
+              )}
             </h3>
             {subtitle && (
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
@@ -65,7 +76,7 @@ export function EntityCard({
           {badge && (
             <Badge
               variant="outline"
-              className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 text-[11px] font-semibold px-2 py-0.5 shrink-0"
+              className="relative z-10 bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 text-[11px] font-semibold px-2 py-0.5 shrink-0"
             >
               {badge}
             </Badge>
@@ -101,25 +112,15 @@ export function EntityCard({
           </div>
         )}
 
-        {children}
+        {children && <div className="relative z-10">{children}</div>}
       </div>
 
       {/* Actions footer */}
       {actions && (
-        <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
+        <div className="relative z-10 mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
           {actions}
         </div>
       )}
     </div>
   );
-
-  if (href) {
-    return (
-      <Link href={href} className="block h-full">
-        {content}
-      </Link>
-    );
-  }
-
-  return content;
 }

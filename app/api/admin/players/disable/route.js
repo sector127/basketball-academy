@@ -1,8 +1,11 @@
 import Player from '@/models/Player';
 import connectToDatabase from "@/lib/mongoose";
 import {NextResponse} from "next/server";
+import {requireAuth} from "@/lib/authGuard";
 
 export async function PATCH(req) {
+    const {errorResponse} = await requireAuth(['admin']);
+    if (errorResponse) return errorResponse;
     try {
         await connectToDatabase();
 
@@ -10,7 +13,7 @@ export async function PATCH(req) {
 
         const players = await Player.updateMany(
             {_id: {$in: playerIds}},
-            {isActive: false}
+            {isActive: false, isFirstTeam: false}
         );
 
         return NextResponse.json(players, {status: 200});

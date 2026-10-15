@@ -2,21 +2,26 @@
 
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/ui/page-header';
 import GameForm from '@/components/GameForm';
+import GameBoxScoreEditor from '@/components/GameBoxScoreEditor';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Loader from '@/components/Loader';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import useSWR from 'swr';
 import { Trophy, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 const fetcher = (url) => fetch(url).then((res) => (res.ok ? res.json() : null));
 
-export default function EditGamePage({ params }) {
-  const { gameId } = React.use(params);
+export default function EditGamePage() {
+  const t = useTranslations('Games');
+  const routeParams = useParams();
+  const gameId = routeParams?.gameId;
   const router = useRouter();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
@@ -36,6 +41,7 @@ export default function EditGamePage({ params }) {
         team: formData.team,
         opponent: formData.opponent,
         startTime: formData.startTime ? new Date(formData.startTime) : undefined,
+        endTime: formData.endTime ? new Date(formData.endTime) : undefined,
         venue: isAway ? undefined : formData.venue || undefined,
         location: isAway ? formData.location || 'Away' : 'Home',
         isAwayGame: isAway,
@@ -93,36 +99,58 @@ export default function EditGamePage({ params }) {
   return (
     <DashboardLayout>
       <PageHeader
-        title={`Edit: ${game.opponent ? `vs ${game.opponent}` : 'Match Fixture'}`}
+        title={t('editGame')}
         subtitle="Modify opponent matchup, arena assignment, and scheduled time"
         badge="Edit Mode"
         icon={Trophy}
         actions={
           <Button asChild variant="outline" size="sm" className="shadow-sm">
             <Link href="/dashboard/admin/games">
-              <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to Match Center
+              <ArrowLeft className="mr-1.5 h-4 w-4" /> {t('backToGames')}
             </Link>
           </Button>
         }
       />
+      <div className="max-w-4xl mx-auto space-y-6">
+        <Tabs defaultValue="fixture" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-6 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
+            <TabsTrigger value="fixture" className="rounded-lg text-xs font-semibold">
+              Fixture & Schedule
+            </TabsTrigger>
+            <TabsTrigger value="boxscore" className="rounded-lg text-xs font-semibold">
+              Box Score & Stats
+            </TabsTrigger>
+          </TabsList>
 
-      <div className="max-w-3xl mx-auto rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900/90">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <GameForm register={register} setValue={setValue} initialValues={game} />
+          <TabsContent value="fixture">
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900/90">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                <GameForm register={register} setValue={setValue} initialValues={game} />
 
-          <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
-            <Button asChild variant="outline">
-              <Link href="/dashboard/admin/games">Cancel</Link>
-            </Button>
-            <Button
-              type="submit"
-              disabled={submitting}
-              className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold shadow-sm"
-            >
-              {submitting ? 'Saving Changes...' : 'Save Changes'}
-            </Button>
-          </div>
-        </form>
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
+                  <Button asChild variant="outline">
+                    <Link href="/dashboard/admin/games">{t('cancel')}</Link>
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={submitting}
+                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold shadow-sm rounded-xl"
+                  >
+                    {submitting ? '...' : t('updateGame')}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="boxscore">
+            <GameBoxScoreEditor
+              gameId={gameId}
+              teamId={game.team?._id || game.team}
+              opponentName={game.opponent}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Loader from '@/components/Loader';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -22,56 +22,28 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { LuMoreHorizontal } from 'react-icons/lu';
-import { Trophy, Calendar, MapPin, Edit3, Trash2 } from 'lucide-react';
+import { Trophy, Calendar, MapPin, Edit3, Trash2, MoreHorizontal as LuMoreHorizontal } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { useIsAdmin } from '@/hooks/use-is-admin';
 
 export default function GameList() {
+  const t = useTranslations('Games');
+  const isAdmin = useIsAdmin();
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [gameToDelete, setGameToDelete] = useState(null);
   const router = useRouter();
-
   const fetchGames = async () => {
     try {
       setLoading(true);
-      // Try /api/admin/games first
-      let res = await fetch('/api/admin/games');
-      let data = [];
+      // Games are summarized server-side from game events (scores already from our side)
+      const res = await fetch('/api/admin/games');
+      if (!res.ok) throw new Error('Failed to load games');
+      const data = await res.json();
 
-      if (res.ok) {
-        data = await res.json();
-      }
-
-      // If no games from /api/admin/games, fetch from /api/admin/events
-      if (!Array.isArray(data) || data.length === 0) {
-        const eventsRes = await fetch('/api/admin/events');
-        if (eventsRes.ok) {
-          const eventsData = await eventsRes.json();
-          if (Array.isArray(eventsData)) {
-            data = eventsData
-              .filter((e) => e.eventType === 'game')
-              .map((e) => ({
-                _id: e._id,
-                date: e.startTime,
-                startTime: new Date(e.startTime).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                }),
-                team: e.team || { name: 'BBA Team' },
-                opponent: e.opponent || 'Opponent',
-                venue: e.venue?.name || e.location || 'BBA Court',
-                location: e.isAwayGame ? 'Away' : 'Home',
-                score: {
-                  ourTeam: e.gameResult?.homeTeamScore ?? null,
-                  opponentTeam: e.gameResult?.awayTeamScore ?? null,
-                },
-              }));
-          }
-        }
-      }
-
-      setGames(Array.isArray(data) ? data.sort((a, b) => new Date(b.date) - new Date(a.date)) : []);
+      setGames(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -83,13 +55,39 @@ export default function GameList() {
     fetchGames();
   }, []);
 
-  const today = new Date();
-  const pastGames = games.filter(
-    (g) => g.score?.ourTeam !== null && g.score?.opponentTeam !== null
-  );
-  const futureGames = games.filter(
-    (g) => g.score?.ourTeam === null || g.score?.opponentTeam === null
-  );
+  const isGameCompleted = (g) => {
+    if (g.status === 'completed') return true;
+    if (g.status === 'scheduled') return false;
+    return g.score?.ourTeam !== null && g.score?.opponentTeam !== null;
+  };
+
+  const pastGames = useMemo(() => {
+    return games
+      .filter((g) => isGameCompleted(g))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [games]);
+
+  const futureGames = useMemo(() => {
+    return games
+      .filter((g) => !isGameCompleted(g))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [games]);
+
+  const handleDeleteGame = async () => {
+    if (!gameToDelete) return;
+    try {
+      const res = await fetch(`/api/admin/games/${gameToDelete._id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setGames((prev) => prev.filter((g) => g._id !== gameToDelete._id));
+      }
+    } catch (err) {
+      console.error('Failed to delete game:', err);
+    } finally {
+      setGameToDelete(null);
+    }
+  };
 
   const handleEdit = (game) => {
     router.push(`/dashboard/admin/games/edit/${game._id}`);
@@ -122,7 +120,7 @@ export default function GameList() {
 
           <div className="flex items-center gap-2">
             <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-              {game.location || 'Home'}
+              {game.location === 'Away' ? t('away') : t('home')}
             </span>
 
             {isPast ? (
@@ -131,10 +129,14 @@ export default function GameList() {
                 label={isWin ? 'Won' : isTie ? 'Draw' : 'Lost'}
                 variant={isWin ? 'success' : isTie ? 'warning' : 'destructive'}
               />
+            ) : new Date(game.endDate || game.date) < new Date() ? (
+              // Played but no final score recorded yet
+              <StatusBadge status="pending" label={t('awaitingResult')} variant="warning" />
             ) : (
-              <StatusBadge status="scheduled" label="Scheduled" variant="info" />
+              <StatusBadge status="scheduled" label={t('scheduled')} variant="info" />
             )}
 
+            {isAdmin && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-slate-400">
@@ -143,10 +145,17 @@ export default function GameList() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-36 rounded-xl">
                 <DropdownMenuItem onClick={() => handleEdit(game)} className="cursor-pointer text-xs">
-                  <Edit3 className="mr-2 h-3.5 w-3.5" /> Edit Match
+                  <Edit3 className="mr-2 h-3.5 w-3.5" /> {t('editGame')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setGameToDelete(game)}
+                  className="cursor-pointer text-xs text-rose-600 dark:text-rose-400 focus:text-rose-600 focus:bg-rose-50 dark:focus:bg-rose-950/30"
+                >
+                  <Trash2 className="mr-2 h-3.5 w-3.5" /> {t('deleteGame') || 'Delete Match'}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            )}
           </div>
         </div>
 
@@ -155,7 +164,7 @@ export default function GameList() {
           {/* Home / Academy Team */}
           <div className="flex-1 text-left">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-              {isHome ? 'Home' : 'Away'}
+              {isHome ? t('home') : t('away')}
             </p>
             <p className="text-base font-bold text-slate-900 dark:text-slate-100 truncate">
               {game.team?.name || 'BBA Team'}
@@ -184,7 +193,7 @@ export default function GameList() {
           {/* Opponent Team */}
           <div className="flex-1 text-right">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-              {isHome ? 'Away' : 'Home'}
+              {isHome ? t('away') : t('home')}
             </p>
             <p className="text-base font-bold text-slate-900 dark:text-slate-100 truncate">
               {game.opponent || 'Opponent'}
@@ -214,6 +223,7 @@ export default function GameList() {
   }
 
   return (
+    <>
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
       {/* Upcoming Fixtures */}
       <div className="space-y-4">
@@ -223,10 +233,10 @@ export default function GameList() {
           </div>
           <div>
             <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
-              Upcoming Fixtures
+              {t('scheduled')}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Scheduled regular and tournament games
+              {t('matchCenterSubtitle')}
             </p>
           </div>
         </div>
@@ -237,8 +247,8 @@ export default function GameList() {
           ) : (
             <EmptyState
               icon={Calendar}
-              title="No upcoming fixtures"
-              description="Schedule the next match for your academy squads."
+              title={t('noGames')}
+              description={t('noGamesDesc')}
             />
           )}
         </div>
@@ -252,10 +262,10 @@ export default function GameList() {
           </div>
           <div>
             <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
-              Match Results
+              {t('completed')}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Final scores and box results
+              {t('final')}
             </p>
           </div>
         </div>
@@ -266,12 +276,33 @@ export default function GameList() {
           ) : (
             <EmptyState
               icon={Trophy}
-              title="No match results yet"
-              description="Completed games with final scores will be displayed here."
+              title={t('noGames')}
+              description={t('noGamesDesc')}
             />
           )}
         </div>
       </div>
     </div>
+
+    <AlertDialog open={Boolean(gameToDelete)} onOpenChange={(open) => !open && setGameToDelete(null)}>
+      <AlertDialogContent className="rounded-2xl">
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t('deleteConfirmTitle') || 'Confirm Deletion'}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t('deleteConfirmDesc') || 'Are you sure you want to delete this game fixture? This action cannot be undone.'}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel className="rounded-xl">{t('cancel') || 'Cancel'}</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleDeleteGame}
+            className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl"
+          >
+            {t('deleteGame') || 'Delete Match'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

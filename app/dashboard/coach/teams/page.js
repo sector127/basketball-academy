@@ -10,8 +10,11 @@ import { motion } from 'framer-motion';
 import { Shield, Users, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 export default function CoachTeamsPage() {
+  const t = useTranslations('CoachDashboard');
+  const tTeams = useTranslations('Teams');
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -58,9 +61,9 @@ export default function CoachTeamsPage() {
   return (
     <DashboardLayout>
       <PageHeader
-        title="My Teams"
-        subtitle="Competitive academy teams, tactical court setups, and roster management"
-        badge={`${teams.length} Assigned Teams`}
+        title={t('assignedTeams')}
+        subtitle={t('assignedTeamsDesc')}
+        badge={`${teams.length} ${tTeams('title')}`}
         icon={Shield}
       />
 
@@ -81,7 +84,7 @@ export default function CoachTeamsPage() {
                 actions={
                   <Button asChild size="sm" className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold text-xs shadow-sm w-full">
                     <Link href={`/dashboard/coach/teams/${team._id}`}>
-                      View Roster & Court <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                      {tTeams('viewRoster')} <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                     </Link>
                   </Button>
                 }

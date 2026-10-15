@@ -95,3 +95,360 @@
         @apply bg-background text-foreground;
     }
 }
+
+/* ==========================================================================
+   Modern Dashboard Calendar Theming (react-big-calendar overrides)
+   Aligns with BBA Design Tokens: Slate/Zinc surface, Hairline borders,
+   Basketball Gold/Amber accent, Tactical Blue, Royal Purple, Victory Emerald
+   ========================================================================== */
+
+/* Calendar Outer Frame */
+.rbc-calendar {
+    font-family: inherit;
+    color: inherit;
+}
+
+/* Base Grid Structure & Hairline Low-Contrast Borders */
+.rbc-month-view,
+.rbc-time-view,
+.rbc-agenda-view {
+    border: 1px solid rgb(226 232 240 / 0.8);
+    border-radius: 1rem;
+    overflow: hidden;
+    background-color: transparent;
+}
+
+.dark .rbc-month-view,
+.dark .rbc-time-view,
+.dark .rbc-agenda-view {
+    border: 1px solid rgba(51, 65, 85, 0.45);
+}
+
+.rbc-month-row + .rbc-month-row {
+    border-top: 1px solid rgb(226 232 240 / 0.7);
+}
+
+.dark .rbc-month-row + .rbc-month-row {
+    border-top: 1px solid rgba(51, 65, 85, 0.35);
+}
+
+.rbc-day-bg + .rbc-day-bg {
+    border-left: 1px solid rgb(226 232 240 / 0.7);
+}
+
+.dark .rbc-day-bg + .rbc-day-bg {
+    border-left: 1px solid rgba(51, 65, 85, 0.35);
+}
+
+/* Day Column Headers (Sun, Mon, Tue...) */
+.rbc-header {
+    padding: 0.65rem 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgb(100 116 139); /* slate-500 */
+    background-color: rgba(248, 250, 252, 0.85); /* slate-50 */
+    border-bottom: 1px solid rgb(226 232 240 / 0.8);
+    border-left: none;
+    text-align: center;
+}
+
+.dark .rbc-header {
+    color: rgb(100 116 139); /* slate-500 for low, calm contrast */
+    background-color: rgba(15, 23, 42, 0.5); /* slate-900 */
+    border-bottom: 1px solid rgba(51, 65, 85, 0.45);
+}
+
+.rbc-header + .rbc-header {
+    border-left: 1px solid rgb(226 232 240 / 0.7);
+}
+
+.dark .rbc-header + .rbc-header {
+    border-left: 1px solid rgba(51, 65, 85, 0.35);
+}
+
+/* Month View Cells */
+.rbc-day-bg {
+    transition: background-color 0.15s ease;
+}
+
+.rbc-day-bg:hover {
+    background-color: rgba(241, 245, 249, 0.4);
+}
+
+.dark .rbc-day-bg:hover {
+    background-color: rgba(30, 41, 59, 0.3);
+}
+
+/* Off-Range Days (Days outside current month) */
+.rbc-off-range-bg {
+    background-color: rgba(248, 250, 252, 0.5) !important;
+}
+
+.dark .rbc-off-range-bg {
+    background-color: rgba(2, 6, 23, 0.4) !important;
+}
+
+/* Today Cell Highlight */
+.rbc-today {
+    background-color: rgba(245, 158, 11, 0.05) !important;
+}
+
+.dark .rbc-today {
+    background-color: rgba(245, 158, 11, 0.07) !important;
+}
+
+/* Date Labels */
+.rbc-date-cell {
+    padding: 0.35rem 0.5rem;
+    text-align: right;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgb(100 116 139);
+}
+
+.dark .rbc-date-cell {
+    color: rgb(148 163 184);
+}
+
+.rbc-date-cell.rbc-off-range {
+    color: rgb(203 213 225) !important;
+}
+
+.dark .rbc-date-cell.rbc-off-range {
+    color: rgb(71 85 105) !important;
+}
+
+.rbc-date-cell.rbc-now .rbc-button-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    padding: 0 0.35rem;
+    border-radius: 9999px;
+    background-color: rgb(245 158 11);
+    color: rgb(15 23 42);
+    font-weight: 700;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* Events in Month & Time Views */
+.rbc-event {
+    border: none !important;
+    background: transparent !important;
+    padding: 1px 2px !important;
+}
+
+.rbc-event:focus {
+    outline: none !important;
+}
+
+.rbc-event-content {
+    font-size: 0.75rem;
+    line-height: 1.15;
+}
+
+/* Show More Link ("+2 more") */
+.rbc-show-more {
+    font-size: 0.6875rem !important;
+    font-weight: 700 !important;
+    color: rgb(217 119 6) !important; /* amber-600 */
+    background-color: rgba(245, 158, 11, 0.1) !important;
+    border-radius: 0.375rem !important;
+    padding: 0.15rem 0.4rem !important;
+    margin: 2px 4px !important;
+    display: inline-block !important;
+    transition: background-color 0.15s ease;
+}
+
+.dark .rbc-show-more {
+    color: rgb(251 191 36) !important; /* amber-400 */
+}
+
+.rbc-show-more:hover {
+    background-color: rgba(245, 158, 11, 0.2) !important;
+}
+
+/* Popover Overlay for "+N more" */
+.rbc-overlay {
+    background-color: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 1rem !important;
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
+    padding: 0.75rem !important;
+    z-index: 50 !important;
+}
+
+.rbc-overlay-header {
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.025em;
+    color: hsl(var(--foreground)) !important;
+    border-bottom: 1px solid hsl(var(--border)) !important;
+    padding-bottom: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+}
+
+/* Time View (Week & Day) */
+.rbc-time-view .rbc-time-header {
+    border-bottom: 1px solid rgb(226 232 240 / 0.8);
+}
+
+.dark .rbc-time-view {
+    border: 1px solid rgba(51, 65, 85, 0.35) !important;
+    border-radius: 0.875rem !important;
+    overflow: hidden !important;
+}
+
+.dark .rbc-time-header {
+    border-bottom: 1px solid rgba(51, 65, 85, 0.35) !important;
+}
+
+.dark .rbc-time-header > .rbc-row:first-child,
+.dark .rbc-time-header > .rbc-row.rbc-row-resource,
+.dark .rbc-time-header-content > .rbc-row.rbc-row-resource {
+    border-bottom: 1px solid rgba(51, 65, 85, 0.35) !important;
+}
+
+.dark .rbc-time-header.rbc-overflowing {
+    border-right: 1px solid rgba(51, 65, 85, 0.35) !important;
+}
+
+.dark .rbc-time-header-content {
+    border-left: 1px solid rgba(51, 65, 85, 0.3) !important;
+}
+
+.dark .rbc-time-header-content .rbc-header {
+    background-color: transparent !important;
+    border-bottom: none !important;
+    color: rgb(148 163 184) !important;
+    font-size: 0.6875rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    padding: 0.5rem 0.25rem !important;
+}
+
+.dark .rbc-time-header-content .rbc-header + .rbc-header {
+    border-left: 1px solid rgba(51, 65, 85, 0.25) !important;
+}
+
+.dark .rbc-time-header-content .rbc-header.rbc-today {
+    background-color: rgba(245, 158, 11, 0.06) !important;
+    color: rgb(245 158 11) !important;
+}
+
+.dark .rbc-time-view .rbc-allday-cell + .rbc-allday-cell {
+    border-left: 1px solid rgba(51, 65, 85, 0.3) !important;
+}
+
+.dark .rbc-time-view-resources .rbc-time-gutter,
+.dark .rbc-time-view-resources .rbc-time-header-gutter,
+.dark .rbc-time-view .rbc-time-gutter,
+.dark .rbc-time-view .rbc-time-header-gutter {
+    background-color: transparent !important;
+    border-right: 1px solid rgba(51, 65, 85, 0.3) !important;
+    color: rgb(100 116 139) !important;
+}
+
+.dark .rbc-time-content {
+    border-top: 1px solid rgba(51, 65, 85, 0.35) !important;
+}
+
+.dark .rbc-time-content > * + * > * {
+    border-left: 1px solid rgba(51, 65, 85, 0.25) !important;
+}
+
+.dark .rbc-timeslot-group {
+    border-bottom: 1px solid rgba(51, 65, 85, 0.25) !important;
+    min-height: 48px !important;
+}
+
+/* Override specific selector from react-big-calendar.css line 622 */
+.dark .rbc-day-slot .rbc-time-slot,
+.dark .rbc-time-slot {
+    border-top: 1px dashed rgba(51, 65, 85, 0.15) !important;
+}
+
+.dark .rbc-day-slot {
+    border-left: 1px solid rgba(51, 65, 85, 0.25) !important;
+}
+
+.dark .rbc-day-slot.rbc-today {
+    background-color: rgba(245, 158, 11, 0.035) !important;
+}
+
+.dark .rbc-day-slot .rbc-event {
+    border: none !important;
+}
+
+/* Agenda View */
+.rbc-agenda-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+    border: 1px solid rgb(226 232 240 / 0.8);
+}
+
+.dark .rbc-agenda-view table.rbc-agenda-table {
+    border: 1px solid rgba(51, 65, 85, 0.35) !important;
+    border-radius: 0.875rem !important;
+    overflow: hidden !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+}
+
+.dark .rbc-agenda-view table.rbc-agenda-table thead > tr > th {
+    background-color: rgba(15, 23, 42, 0.5) !important;
+    border-bottom: 1px solid rgba(51, 65, 85, 0.35) !important;
+    border-top: none !important;
+    color: rgb(100 116 139) !important;
+    font-size: 0.6875rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    padding: 0.75rem 1rem !important;
+}
+
+.dark .rbc-agenda-view table.rbc-agenda-table tbody > tr + tr {
+    border-top: 1px solid rgba(51, 65, 85, 0.2) !important;
+}
+
+.dark .rbc-agenda-view table.rbc-agenda-table tbody > tr > td {
+    border-bottom: 1px solid rgba(51, 65, 85, 0.2) !important;
+    border-top: none !important;
+    padding: 0.75rem 1rem !important;
+    color: rgb(226 232 240) !important;
+}
+
+.dark .rbc-agenda-view table.rbc-agenda-table tbody > tr > td + td {
+    border-left: 1px solid rgba(51, 65, 85, 0.18) !important;
+}
+
+.dark .rbc-agenda-view table.rbc-agenda-table tbody > tr:hover {
+    background-color: rgba(30, 41, 59, 0.3) !important;
+}
+.rbc-agenda-date-cell {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-weight: 600;
+    white-space: nowrap;
+    color: hsl(var(--foreground));
+}
+
+.rbc-agenda-time-cell {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.75rem;
+    color: rgb(100 116 139);
+    white-space: nowrap;
+}
+
+.dark .rbc-agenda-time-cell {
+    color: rgb(148 163 184);
+}
+
+.rbc-agenda-event-cell {
+    font-weight: 500;
+}

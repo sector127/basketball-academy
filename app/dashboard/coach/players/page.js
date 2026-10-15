@@ -8,10 +8,12 @@ import { DataTable } from '@/components/DataTable';
 import Loader from '@/components/Loader';
 import useSWR, { mutate } from 'swr';
 import { Users } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const fetcher = (url) => fetch(url).then((res) => (res.ok ? res.json() : null));
 
 export default function CoachPlayersPage() {
+  const t = useTranslations('Players');
   const [context] = React.useState('players');
   const { data: response, error, isLoading } = useSWR('/api/coach/players', fetcher);
 
@@ -22,7 +24,7 @@ export default function CoachPlayersPage() {
   if (isLoading) {
     return (
       <DashboardLayout>
-        <PageHeader title="Squad Players" subtitle="Loading roster athletes..." />
+        <PageHeader title={t('directoryTitle')} subtitle={t('loadingPlayers')} />
         <Loader />
       </DashboardLayout>
     );
@@ -44,9 +46,9 @@ export default function CoachPlayersPage() {
   return (
     <DashboardLayout>
       <PageHeader
-        title="Squad Players"
-        subtitle="Complete roster of basketball athletes across your assigned teams"
-        badge={`${players.length} Athletes`}
+        title={t('directoryTitle')}
+        subtitle={t('directorySubtitle')}
+        badge={t('activePlayersCount', { count: players.length })}
         icon={Users}
       />
 

@@ -416,7 +416,14 @@ async function seedDummyData() {
 
     const twoDaysAgo3pm = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 2, 15, 0, 0);
     const twoDaysAgo5pm = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 2, 17, 0, 0);
-
+    const fourDaysAgo5pm = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 4, 17, 0, 0);
+    const fourDaysAgo7pm = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 4, 19, 0, 0);
+    const sevenDaysAgo6pm = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7, 18, 0, 0);
+    const sevenDaysAgo8pm = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7, 20, 0, 0);
+    const tenDaysAgo4pm = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 10, 16, 0, 0);
+    const tenDaysAgo6pm = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 10, 18, 0, 0);
+    const fourteenDaysAgo6pm = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 14, 18, 0, 0);
+    const fourteenDaysAgo8pm = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 14, 20, 0, 0);
     // Event 1: Practice U18
     await Event.create({
       eventType: "practice",
@@ -534,7 +541,106 @@ async function seedDummyData() {
         { period: 4, homeScore: 25, awayScore: 18 },
       ],
     });
+    // Additional historical games for U18
+    const u18PastGame1 = await Event.create({
+      eventType: "game",
+      title: "BBA U18 vs Overtime Academy U18",
+      description: "National Youth Championship Round 4",
+      opponent: "Overtime Academy U18",
+      startTime: fourDaysAgo5pm,
+      endTime: fourDaysAgo7pm,
+      isAwayGame: false,
+      venue: venues[0]._id,
+      team: teamU18._id,
+      players: insertedU18.map(p => p._id),
+    });
+    await GameResult.create({
+      event: u18PastGame1._id,
+      status: "completed",
+      homeTeamScore: 88,
+      awayTeamScore: 79,
+      periodScores: [
+        { period: 1, homeScore: 22, awayScore: 19 },
+        { period: 2, homeScore: 24, awayScore: 20 },
+        { period: 3, homeScore: 20, awayScore: 21 },
+        { period: 4, homeScore: 22, awayScore: 19 },
+      ],
+    });
 
+    const u18PastGame2 = await Event.create({
+      eventType: "game",
+      title: "BBA U18 vs Batumi Youth U18",
+      description: "National Youth Championship Round 3",
+      opponent: "Batumi Youth U18",
+      startTime: sevenDaysAgo6pm,
+      endTime: sevenDaysAgo8pm,
+      isAwayGame: true,
+      location: "Batumi Sport Complex Arena",
+      team: teamU18._id,
+      players: insertedU18.map(p => p._id),
+    });
+    await GameResult.create({
+      event: u18PastGame2._id,
+      status: "completed",
+      homeTeamScore: 80,
+      awayTeamScore: 76,
+      periodScores: [
+        { period: 1, homeScore: 20, awayScore: 18 },
+        { period: 2, homeScore: 18, awayScore: 21 },
+        { period: 3, homeScore: 21, awayScore: 17 },
+        { period: 4, homeScore: 21, awayScore: 20 },
+      ],
+    });
+
+    const u18PastGame3 = await Event.create({
+      eventType: "game",
+      title: "BBA U18 vs Tbilisi Bulls U18",
+      description: "National Youth Championship Round 2",
+      opponent: "Tbilisi Bulls U18",
+      startTime: tenDaysAgo4pm,
+      endTime: tenDaysAgo6pm,
+      isAwayGame: false,
+      venue: venues[0]._id,
+      team: teamU18._id,
+      players: insertedU18.map(p => p._id),
+    });
+    await GameResult.create({
+      event: u18PastGame3._id,
+      status: "completed",
+      homeTeamScore: 102,
+      awayTeamScore: 68,
+      periodScores: [
+        { period: 1, homeScore: 28, awayScore: 14 },
+        { period: 2, homeScore: 26, awayScore: 18 },
+        { period: 3, homeScore: 25, awayScore: 16 },
+        { period: 4, homeScore: 23, awayScore: 20 },
+      ],
+    });
+
+    const u18PastGame4 = await Event.create({
+      eventType: "game",
+      title: "BBA U18 vs Sokhumi Youth U18",
+      description: "National Youth Championship Season Opener",
+      opponent: "Sokhumi Youth U18",
+      startTime: fourteenDaysAgo6pm,
+      endTime: fourteenDaysAgo8pm,
+      isAwayGame: false,
+      venue: venues[0]._id,
+      team: teamU18._id,
+      players: insertedU18.map(p => p._id),
+    });
+    await GameResult.create({
+      event: u18PastGame4._id,
+      status: "completed",
+      homeTeamScore: 91,
+      awayTeamScore: 84,
+      periodScores: [
+        { period: 1, homeScore: 25, awayScore: 22 },
+        { period: 2, homeScore: 21, awayScore: 20 },
+        { period: 3, homeScore: 22, awayScore: 21 },
+        { period: 4, homeScore: 23, awayScore: 21 },
+      ],
+    });
     console.log("Created events, practices, games, and game results!");
     console.log("\nDummy data seeding for nika@bba.ge completed successfully!");
   } catch (err) {

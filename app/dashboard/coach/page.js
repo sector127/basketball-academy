@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
+import { useTranslations } from 'next-intl';
 import DashboardLayout from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/ui/page-header';
 import { StatCard } from '@/components/ui/stat-card';
@@ -19,14 +20,14 @@ import {
   Eye,
   Calendar,
 } from 'lucide-react';
-import { PiCourtBasketballBold } from 'react-icons/pi';
+import { PiCourtBasketballBold } from '@/components/icons/navIcons';
 
 const fetcher = (url) => fetch(url).then((res) => (res.ok ? res.json() : null));
 
 export default function CoachDashboard() {
+  const t = useTranslations('CoachDashboard');
   const { data: teamsData } = useSWR('/api/coach/teams', fetcher);
   const { data: playersData } = useSWR('/api/coach/players', fetcher);
-
   const teams = Array.isArray(teamsData) ? teamsData : [];
   const players = playersData?.data && Array.isArray(playersData.data) ? playersData.data : [];
 
@@ -35,19 +36,19 @@ export default function CoachDashboard() {
   return (
     <DashboardLayout>
       <PageHeader
-        title="Coach Command Center"
-        subtitle="Rosters, tactical plays, starting lineups, and squad telemetry"
-        badge="Head Coach"
+        title={t('title')}
+        subtitle={t('subtitle')}
+        badge={t('badge')}
         actions={
           <div className="flex items-center gap-2">
             <Button asChild size="sm" className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold shadow-sm">
               <Link href="/dashboard/coach/combinations">
-                <BookOpen className="mr-1.5 h-4 w-4" /> Tactical Playbook
+                <BookOpen className="mr-1.5 h-4 w-4" /> {t('tacticalPlaybook')}
               </Link>
             </Button>
             <Button asChild variant="outline" size="sm" className="shadow-sm">
               <Link href="/dashboard/coach/players">
-                <Users className="mr-1.5 h-4 w-4" /> View All Players
+                <Users className="mr-1.5 h-4 w-4" /> {t('viewAllPlayers')}
               </Link>
             </Button>
           </div>
@@ -57,37 +58,37 @@ export default function CoachDashboard() {
       {/* KPI Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Assigned Teams"
+          title={t('assignedTeams')}
           value={teams.length}
           icon={Shield}
-          description="Competitive squads under guidance"
+          description={t('assignedTeamsDesc')}
           trend="U18 Elite & U16 Dev"
           trendType="neutral"
           accent="blue"
         />
         <StatCard
-          title="Active Players"
+          title={t('activePlayers')}
           value={players.length}
           icon={Users}
-          description="Total athletes in coached teams"
+          description={t('activePlayersDesc')}
           trend="100% active roster"
           trendType="positive"
           accent="gold"
         />
         <StatCard
-          title="Starting Five"
+          title={t('startingLineups')}
           value={startersCount}
           icon={Star}
-          description="Players with first-team status"
+          description={t('startingLineupsDesc')}
           trend="Court starters active"
           trendType="positive"
           accent="emerald"
         />
         <StatCard
-          title="Tactical Sets"
+          title={t('tacticalPlays')}
           value={combinations.length}
           icon={BookOpen}
-          description="Installed playbook combinations"
+          description={t('tacticalPlaysDesc')}
           trend="Visualizer ready"
           trendType="neutral"
           accent="purple"

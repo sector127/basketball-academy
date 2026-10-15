@@ -14,6 +14,21 @@ const PeriodScoreSchema = new mongoose.Schema({
         default: 0
     }
 });
+const PlayerBoxScoreSchema = new mongoose.Schema({
+    player: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Player',
+        required: true,
+    },
+    minutesPlayed: { type: Number, default: 0 },
+    points: { type: Number, default: 0 },
+    assists: { type: Number, default: 0 },
+    rebounds: { type: Number, default: 0 },
+    steals: { type: Number, default: 0 },
+    blocks: { type: Number, default: 0 },
+    turnovers: { type: Number, default: 0 },
+    fouls: { type: Number, default: 0 },
+});
 
 const GameResultSchema = new mongoose.Schema({
     event: {
@@ -31,6 +46,7 @@ const GameResultSchema = new mongoose.Schema({
         default: 0
     },
     periodScores: [PeriodScoreSchema],
+    boxScores: [PlayerBoxScoreSchema],
     status: {
         type: String,
         enum: ['scheduled', 'in_progress', 'completed', 'cancelled'],

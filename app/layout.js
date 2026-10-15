@@ -2,6 +2,7 @@ import {NextIntlClientProvider} from 'next-intl';
 import {getLocale, getMessages} from 'next-intl/server';
 import {Noto_Sans_Georgian, Inter} from "next/font/google";
 import "./globals.css";
+import "leaflet/dist/leaflet.css";
 import {Toaster} from "@/components/ui/toaster";
 import AuthSessionProvider from "@/providers/session-provider";
 import {ThemeProvider} from "@/providers/theme-provider";
@@ -9,13 +10,15 @@ import {ThemeProvider} from "@/providers/theme-provider";
 const inter = Inter({subsets: ["latin"]});
 const notoSansGeorgian = Noto_Sans_Georgian({
     subsets: ['georgian'],
-    weight: '400',
+    weight: ['400', '500', '600', '700'],
 });
 
 export const metadata = {
     title: "Brooklyn Basketball Academy - Tbilisi",
     description: "Brooklyn Basketball Academy's Tbilisi branch",
 };
+export const dynamic = 'force-dynamic';
+
 
 export default async function RootLayout({children}) {
     const locale = await getLocale();

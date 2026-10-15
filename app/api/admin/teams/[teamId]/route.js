@@ -1,12 +1,14 @@
 import {NextResponse} from 'next/server';
+import {requireAuth} from '@/lib/authGuard';
 import connectToDatabase from "@/lib/mongoose";
 import Player from '@/models/Player';
 import Team from '@/models/Team';
 import mongoose from 'mongoose';
 
 export async function GET(request, {params}) {
+    const {errorResponse} = await requireAuth(['admin', 'coach', 'staff', 'player', 'guardian']);
+    if (errorResponse) return errorResponse;
     const {teamId} = await params
-
     try {
         await connectToDatabase();
 
@@ -27,8 +29,9 @@ export async function GET(request, {params}) {
 }
 
 export async function PUT(request, {params}) {
-    const {teamId} = await params
-
+    const {errorResponse} = await requireAuth(['admin']);
+    if (errorResponse) return errorResponse;
+    const {teamId} = await params;
     try {
         await connectToDatabase();
 

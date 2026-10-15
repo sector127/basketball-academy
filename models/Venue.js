@@ -21,7 +21,26 @@ const VenueSchema = new mongoose.Schema({
     address: {
         type: String,
         required: true,
+    },
+    capacity: {
+        type: Number,
+        default: null,
+    },
+    description: {
+        type: String,
+        default: '',
+    },
+    type: {
+        type: String,
+        enum: ['indoor', 'outdoor', 'training_facility'],
+        default: 'indoor',
+    },
+    isActive: {
+        type: Boolean,
+        default: true,
     }
+}, {
+    timestamps: true
 })
 
 const Venue = mongoose.models.Venue || mongoose.model('Venue', VenueSchema);

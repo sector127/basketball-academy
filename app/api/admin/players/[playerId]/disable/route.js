@@ -1,13 +1,14 @@
 import {NextResponse} from "next/server";
+import {requireAuth} from "@/lib/authGuard";
 import connectToDatabase from '@/lib/mongoose';
 import Player from '@/models/Player';
 
 export async function PATCH(req, {params}) {
+    const {errorResponse} = await requireAuth(['admin']);
+    if (errorResponse) return errorResponse;
     await connectToDatabase();
 
-    const {playerId} = params;
-    console.log(playerId);
-
+    const {playerId} = await params;
     try {
         const player = await Player.findById(playerId);
         if (!player) {
@@ -16,6 +17,7 @@ export async function PATCH(req, {params}) {
 
         // Set isActive to false (disable the player)
         player.isActive = false;
+        player.isFirstTeam = false; // free the starting spot
         await player.save();
 
         return NextResponse.json(

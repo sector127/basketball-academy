@@ -10,10 +10,11 @@ import useSWR, { mutate } from 'swr';
 import { Users, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-
+import { useTranslations } from 'next-intl';
 const fetcher = (url) => fetch(url).then((res) => (res.ok ? res.json() : []));
 
 export default function PlayersPage() {
+  const t = useTranslations('Players');
   const [context] = React.useState('players');
   const { data: players, error, isLoading } = useSWR('/api/admin/players', fetcher);
 
@@ -24,7 +25,7 @@ export default function PlayersPage() {
   if (isLoading) {
     return (
       <DashboardLayout>
-        <PageHeader title="Players Directory" subtitle="Loading academy player database..." />
+        <PageHeader title={t('directoryTitle')} subtitle={t('loadingPlayers')} />
         <Loader />
       </DashboardLayout>
     );
@@ -33,7 +34,7 @@ export default function PlayersPage() {
   if (error) {
     return (
       <DashboardLayout>
-        <PageHeader title="Players Directory" subtitle="Error loading players" />
+        <PageHeader title={t('directoryTitle')} subtitle={t('errorLoading')} />
         <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300">
           Error: {error}
         </div>
@@ -46,14 +47,14 @@ export default function PlayersPage() {
   return (
     <DashboardLayout>
       <PageHeader
-        title="Players Directory"
-        subtitle="Manage athlete registrations, physical metrics, emergency contacts, and active status"
-        badge={`${playerList.length} Active Players`}
+        title={t('directoryTitle')}
+        subtitle={t('directorySubtitle')}
+        badge={t('activePlayersCount', { count: playerList.length })}
         icon={Users}
         actions={
           <Button asChild size="sm" className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold shadow-sm">
             <Link href="/dashboard/admin/players/create">
-              <Plus className="mr-1.5 h-4 w-4" /> Add Player
+              <Plus className="mr-1.5 h-4 w-4" /> {t('addPlayer')}
             </Link>
           </Button>
         }

@@ -1,15 +1,20 @@
 import {NextResponse} from "next/server";
+import {requireAuth} from "@/lib/authGuard";
 import connectToDatabase from '@/lib/mongoose';
 import Player from '@/models/Player';
+import {PLAYER_PUBLIC_FIELDS, canManageTeam, canViewPlayerContacts} from '@/lib/access';
 
 export async function GET(req, {params}) {
+    const {session, errorResponse} = await requireAuth(['admin', 'coach', 'staff', 'player', 'guardian']);
+    if (errorResponse) return errorResponse;
     await connectToDatabase();
 
-    const {teamId} = params;
-
+    const {teamId} = await params;
     try {
         // Fetch players from the specific team who are in the first team
-        const firstTeamPlayers = await Player.find({team: teamId, isFirstTeam: true}).populate('team');
+        const query = Player.find({team: teamId, isFirstTeam: true}).populate('team', 'name');
+        if (!canViewPlayerContacts(session.user.role)) query.select(PLAYER_PUBLIC_FIELDS);
+        const firstTeamPlayers = await query;
         return NextResponse.json(firstTeamPlayers);
     } catch (error) {
         console.error('Error fetching first team players:', error);
@@ -18,12 +23,17 @@ export async function GET(req, {params}) {
 }
 
 export async function PATCH(req, {params}) {
+    const {session, errorResponse} = await requireAuth(['admin', 'coach']);
+    if (errorResponse) return errorResponse;
     await connectToDatabase();
-
     const {teamId} = await params;
     const {playerId, isFirstTeam} = await req.json();
 
     try {
+        if (!(await canManageTeam(session, teamId))) {
+            return NextResponse.json({error: 'Forbidden - You do not coach this team'}, {status: 403});
+        }
+
         // Check if the player exists and belongs to the team
         const player = await Player.findOne({_id: playerId, team: teamId});
         if (!player) {
@@ -32,7 +42,11 @@ export async function PATCH(req, {params}) {
 
         // If setting isFirstTeam to true, check if there are already 5 players in the first team for this team
         if (isFirstTeam) {
-            const firstTeamPlayersCount = await Player.countDocuments({team: teamId, isFirstTeam: true});
+            if (player.isActive === false) {
+                return NextResponse.json({error: 'Disabled players cannot be starters'}, {status: 400});
+            }
+
+            const firstTeamPlayersCount = await Player.countDocuments({team: teamId, isFirstTeam: true, isActive: {$ne: false}});
             if (firstTeamPlayersCount >= 5) {
                 return NextResponse.json(
                     {error: 'First team already has 5 players'},
@@ -44,6 +58,7 @@ export async function PATCH(req, {params}) {
             const existingPlayerInPosition = await Player.findOne({
                 team: teamId,
                 isFirstTeam: true,
+                isActive: {$ne: false},
                 position: player.position,
             });
 
@@ -58,7 +73,7 @@ export async function PATCH(req, {params}) {
         }
 
         // Update the player's isFirstTeam status
-        player.isFirstTeam = isFirstTeam;
+        player.isFirstTeam = Boolean(isFirstTeam);
         await player.save();
 
         return NextResponse.json(
@@ -66,7 +81,14 @@ export async function PATCH(req, {params}) {
             {status: 200}
         );
     } catch (error) {
+        // Unique index on starters: another request took this position first
+        if (error.code === 11000) {
+            return NextResponse.json(
+                {error: 'That starting position was just filled. Refresh and try again.'},
+                {status: 409}
+            );
+        }
         console.error('Error updating first team status:', error);
         return NextResponse.json({error: 'Failed to update first team status'}, {status: 500});
     }
-}
+}

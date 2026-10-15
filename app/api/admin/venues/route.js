@@ -1,19 +1,25 @@
 import connectToDatabase from "@/lib/mongoose";
 import {NextResponse} from "next/server";
+import {requireAuth} from "@/lib/authGuard";
 import Venue from "@/models/Venue";
 
 export async function GET() {
+    const {errorResponse} = await requireAuth(['admin', 'coach', 'staff', 'player', 'guardian']);
+    if (errorResponse) return errorResponse;
     try {
         await connectToDatabase();
-        const venues = await Venue.find({})
+        // Archived venues (isActive: false) are kept only for past events' history
+        const venues = await Venue.find({isActive: {$ne: false}})
         return NextResponse.json(venues, {status: 200});
     } catch (error) {
         console.error('Error fetching venues:', error);
-        return NextResponse.error();
+        return NextResponse.json({error: 'Failed to fetch venues'}, {status: 500});
     }
 }
 
 export async function POST(request) {
+    const {errorResponse} = await requireAuth(['admin']);
+    if (errorResponse) return errorResponse;
     try {
         // Connect to the database
         await connectToDatabase();

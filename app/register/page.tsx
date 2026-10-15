@@ -6,27 +6,38 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { motion } from 'framer-motion';
 import {
-  LuEyeOff,
-  LuLock,
-  LuMail,
-  LuUser,
-  LuEye,
-  LuCheckCircle,
-  LuXCircle,
-  LuArrowLeft,
-} from 'react-icons/lu';
+  Lock as LuLock,
+  Mail as LuMail,
+  User as LuUser,
+  Eye as LuEye,
+  EyeOff as LuEyeOff,
+  CheckCircle as LuCheckCircle,
+  XCircle as LuXCircle,
+  ArrowLeft as LuArrowLeft,
+} from 'lucide-react';
+import LanguageSelector from '@/components/LanguageSelector';
+import ThemeToggle from '@/components/DarkModeToggle';
 
 const registerSchema = z
   .object({
     name: z
       .string()
-      .min(2, 'Name must be at least 2 characters')
+      .trim()
+      .min(1, 'First name is required')
       .max(50, 'Name must be less than 50 characters'),
+    lastName: z
+      .string()
+      .trim()
+      .min(1, 'Last name is required')
+      .max(50, 'Name must be less than 50 characters'),
+    role: z.enum(['guardian', 'player', 'staff']),
+    note: z.string().max(500, 'Keep the note under 500 characters').optional(),
     email: z.string().email('Please enter a valid email address'),
     password: z
       .string()
@@ -48,11 +59,13 @@ const registerSchema = z
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 const RegisterPage = () => {
+  const t = useTranslations('Register');
+  const tLanding = useTranslations('Landing');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [registeredSuccess, setRegisteredSuccess] = useState(false);
-
+  const [submitError, setSubmitError] = useState('');
   const {
     register,
     handleSubmit,
@@ -61,6 +74,7 @@ const RegisterPage = () => {
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     mode: 'onChange',
+    defaultValues: { role: 'guardian' },
   });
 
   const currentPassword = watch('password') || '';
@@ -73,19 +87,43 @@ const RegisterPage = () => {
     { label: 'Contains special character', met: /[^A-Za-z0-9]/.test(currentPassword) },
   ];
 
+  // Creates an account that an admin must approve before it can sign in
   const onSubmit = async (data: RegisterFormData) => {
     setIsLoading(true);
-    // Simulated registration
-    setTimeout(() => {
-      setIsLoading(false);
+    setSubmitError('');
+    try {
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.name,
+          lastName: data.lastName,
+          email: data.email,
+          password: data.password,
+          role: data.role,
+          note: data.note || '',
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || t('requestFailed'));
+      }
       setRegisteredSuccess(true);
-    }, 600);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : t('requestFailed'));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 p-4 sm:p-6 lg:p-10 relative overflow-hidden">
+      {/* Top Controls */}
+      <div className="absolute top-5 right-5 z-20 flex items-center gap-2">
+        <LanguageSelector />
+        <ThemeToggle />
+      </div>
       <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full bg-amber-500/10 dark:bg-amber-500/5 blur-3xl" />
-
       <motion.div
         className="w-full max-w-md relative"
         initial={{ opacity: 0, y: 20 }}
@@ -105,7 +143,7 @@ const RegisterPage = () => {
             </div>
             <div>
               <h2 className="font-bold text-base text-slate-900 dark:text-slate-100">
-                Brooklyn Basketball Academy
+                {tLanding('brand')}
               </h2>
             </div>
           </Link>
@@ -116,33 +154,64 @@ const RegisterPage = () => {
             <>
               <div className="text-center mb-6">
                 <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-                  Create Staff Account
+                  {t('subtitle')}
                 </h1>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Register as an academy coach or staff member
+                  {t('title')}
                 </p>
               </div>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="name" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Full Name
+                  <Label htmlFor="role" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    {t('accountType')}
                   </Label>
-                  <div className="relative">
-                    <LuUser className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                      id="name"
-                      {...register('name')}
-                      placeholder="e.g. Nikoloz Mskhalaia"
-                      className="pl-9 h-10 text-sm bg-slate-50 dark:bg-slate-800/60"
-                    />
+                  <select
+                    id="role"
+                    {...register('role')}
+                    className="h-10 w-full rounded-md border border-input bg-slate-50 px-3 text-sm dark:bg-slate-800/60"
+                  >
+                    <option value="guardian">{t('accountTypeGuardian')}</option>
+                    <option value="player">{t('accountTypePlayer')}</option>
+                    <option value="staff">{t('accountTypeStaff')}</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="name" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {t('firstName')}
+                    </Label>
+                    <div className="relative">
+                      <LuUser className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input
+                        id="name"
+                        autoComplete="given-name"
+                        {...register('name')}
+                        placeholder={t('firstNamePlaceholder')}
+                        className="pl-9 h-10 text-sm bg-slate-50 dark:bg-slate-800/60"
+                      />
+                    </div>
+                    {errors.name && <p className="text-xs text-rose-500">{errors.name.message}</p>}
                   </div>
-                  {errors.name && <p className="text-xs text-rose-500">{errors.name.message}</p>}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="lastName" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {t('lastName')}
+                    </Label>
+                    <Input
+                      id="lastName"
+                      autoComplete="family-name"
+                      {...register('lastName')}
+                      placeholder={t('lastNamePlaceholder')}
+                      className="h-10 text-sm bg-slate-50 dark:bg-slate-800/60"
+                    />
+                    {errors.lastName && <p className="text-xs text-rose-500">{errors.lastName.message}</p>}
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">
                   <Label htmlFor="email" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Email Address
+                    {t('email')}
                   </Label>
                   <div className="relative">
                     <LuMail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -150,7 +219,7 @@ const RegisterPage = () => {
                       id="email"
                       type="email"
                       {...register('email')}
-                      placeholder="e.g. coach@bba.ge"
+                      placeholder={t('emailPlaceholder')}
                       className="pl-9 h-10 text-sm bg-slate-50 dark:bg-slate-800/60"
                     />
                   </div>
@@ -159,7 +228,7 @@ const RegisterPage = () => {
 
                 <div className="space-y-1.5">
                   <Label htmlFor="password" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Password
+                    {t('password')}
                   </Label>
                   <div className="relative">
                     <LuLock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -167,7 +236,7 @@ const RegisterPage = () => {
                       id="password"
                       type={showPassword ? 'text' : 'password'}
                       {...register('password')}
-                      placeholder="Create a strong password"
+                      placeholder={t('passwordPlaceholder')}
                       className="pl-9 pr-9 h-10 text-sm bg-slate-50 dark:bg-slate-800/60"
                     />
                     <button
@@ -183,7 +252,7 @@ const RegisterPage = () => {
 
                 <div className="space-y-1.5">
                   <Label htmlFor="confirmPassword" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Confirm Password
+                    {t('confirmPassword')}
                   </Label>
                   <div className="relative">
                     <LuLock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -191,7 +260,7 @@ const RegisterPage = () => {
                       id="confirmPassword"
                       type={showConfirmPassword ? 'text' : 'password'}
                       {...register('confirmPassword')}
-                      placeholder="Repeat password"
+                      placeholder={t('confirmPasswordPlaceholder')}
                       className="pl-9 pr-9 h-10 text-sm bg-slate-50 dark:bg-slate-800/60"
                     />
                     <button
@@ -223,6 +292,20 @@ const RegisterPage = () => {
                   ))}
                 </div>
 
+                <div className="space-y-1.5">
+                  <Label htmlFor="note" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    {t('note')}
+                  </Label>
+                  <textarea
+                    id="note"
+                    rows={2}
+                    {...register('note')}
+                    placeholder={t('notePlaceholder')}
+                    className="w-full rounded-md border border-input bg-slate-50 px-3 py-2 text-sm dark:bg-slate-800/60"
+                  />
+                  {errors.note && <p className="text-xs text-rose-500">{errors.note.message}</p>}
+                </div>
+
                 <div className="flex items-center gap-2 pt-1">
                   <input
                     type="checkbox"
@@ -231,17 +314,23 @@ const RegisterPage = () => {
                     className="h-4 w-4 rounded border-slate-300 text-amber-500 focus:ring-amber-400"
                   />
                   <Label htmlFor="terms" className="text-xs text-slate-600 dark:text-slate-400 font-normal">
-                    I agree to the Academy Terms & Code of Conduct
+                    {t('terms')}
                   </Label>
                 </div>
                 {errors.terms && <p className="text-xs text-rose-500">{errors.terms.message}</p>}
+
+                {submitError && (
+                  <p className="rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
+                    {submitError}
+                  </p>
+                )}
 
                 <Button
                   type="submit"
                   disabled={isLoading}
                   className="w-full h-10 mt-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold shadow-md text-sm"
                 >
-                  {isLoading ? 'Creating Account...' : 'Complete Registration'}
+                  {isLoading ? t('creatingAccount') : t('createAccount')}
                 </Button>
               </form>
 
@@ -250,7 +339,7 @@ const RegisterPage = () => {
                   href="/login"
                   className="text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 inline-flex items-center gap-1.5"
                 >
-                  <LuArrowLeft className="h-3.5 w-3.5" /> Already registered? Sign in
+                  <LuArrowLeft className="h-3.5 w-3.5" /> {t('alreadyHaveAccount')} {t('signIn')}
                 </Link>
               </div>
             </>
@@ -260,15 +349,14 @@ const RegisterPage = () => {
                 <LuCheckCircle className="h-7 w-7" />
               </div>
               <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                Registration Complete
+                {t('successTitle')}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                Your academy staff profile has been created successfully.
+                {t('successMessage')}
               </p>
-
               <Button asChild className="w-full mt-6 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs">
                 <Link href="/login">
-                  Proceed to Sign In
+                  {t('signIn')}
                 </Link>
               </Button>
             </div>

@@ -5,6 +5,18 @@ const withNextIntl = createNextIntlPlugin()
 
 const nextConfig = {
     reactStrictMode: true,
+    eslint: {
+        ignoreDuringBuilds: true,
+    },
+    outputFileTracingExcludes: {
+        '*': [
+            'tar',
+            'gauge',
+            'are-we-there-yet',
+            'rimraf',
+            '@mapbox/node-pre-gyp',
+        ],
+    },
 };
 
 export default withNextIntl(nextConfig);

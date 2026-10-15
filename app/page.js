@@ -3,8 +3,11 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import LanguageSelector from '@/components/LanguageSelector';
+import ThemeToggle from '@/components/DarkModeToggle';
 import {
   Trophy,
   Users,
@@ -14,9 +17,11 @@ import {
   Sparkles,
   BookOpen,
 } from 'lucide-react';
-import { PiCourtBasketballBold } from 'react-icons/pi';
+import { PiCourtBasketballBold } from '@/components/icons/navIcons';
 
 export default function LandingPage() {
+  const t = useTranslations('Landing');
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col justify-between selection:bg-amber-500/20 selection:text-amber-600">
       {/* Navigation Header */}
@@ -34,20 +39,22 @@ export default function LandingPage() {
               />
             </div>
             <div>
-              <span className="font-bold text-base tracking-tight">Brooklyn Basketball Academy</span>
+              <span className="font-bold text-base tracking-tight">{t('brand')}</span>
               <span className="hidden sm:inline-block ml-2 text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
-                Tbilisi
+                {t('branch')}
               </span>
             </div>
           </Link>
 
-          <div className="flex items-center gap-3">
-            <Button asChild variant="ghost" size="sm" className="font-semibold text-xs">
-              <Link href="/login">Staff Login</Link>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <LanguageSelector />
+            <ThemeToggle />
+            <Button asChild variant="ghost" size="sm" className="font-semibold text-xs hidden sm:inline-flex">
+              <Link href="/login">{t('staffLogin')}</Link>
             </Button>
             <Button asChild size="sm" className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold text-xs shadow-sm">
               <Link href="/dashboard">
-                Dashboard <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                {t('dashboard')} <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Link>
             </Button>
           </div>
@@ -65,29 +72,29 @@ export default function LandingPage() {
           <div className="container mx-auto px-4 sm:px-6 relative text-center max-w-4xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 text-xs font-semibold mb-6">
               <Sparkles className="h-3.5 w-3.5" />
-              <span>Brooklyn Academy Basketball Excellence</span>
+              <span>{t('heroBadge')}</span>
             </div>
 
             <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-slate-950 dark:text-slate-50">
-              Nurturing Young Champions{' '}
+              {t('heroTitle1')}{' '}
               <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 bg-clip-text text-transparent">
-                in Tbilisi
+                {t('heroTitle2')}
               </span>
             </h1>
 
             <p className="mt-6 text-base sm:text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
-              Professional coaching, tactical game preparation, and player telemetry systems designed to elevate youth athletes into national and collegiate competitors.
+              {t('heroDesc')}
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Button asChild size="lg" className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold shadow-md">
                 <Link href="/dashboard">
-                  <PiCourtBasketballBold className="mr-2 h-5 w-5" /> Enter Academy Portal
+                  <PiCourtBasketballBold className="mr-2 h-5 w-5" /> {t('enterPortal')}
                 </Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="w-full sm:w-auto font-semibold">
                 <Link href="/login">
-                  Coach & Player Sign In
+                  {t('coachPlayerSignIn')}
                 </Link>
               </Button>
             </div>
@@ -98,10 +105,10 @@ export default function LandingPage() {
         <section className="container mx-auto px-4 sm:px-6 py-12 border-t border-slate-200/80 dark:border-slate-800">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-              Academy Performance Infrastructure
+              {t('featuresHeading')}
             </h2>
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              Built on certified training frameworks and digital roster analytics
+              {t('featuresSubheading')}
             </p>
           </div>
 
@@ -109,26 +116,26 @@ export default function LandingPage() {
             {[
               {
                 icon: Shield,
-                title: 'Competitive Squads',
-                desc: 'Structured divisions from U16 to U18 competing in national youth championships.',
+                title: t('feature1Title'),
+                desc: t('feature1Desc'),
                 color: 'text-blue-500 bg-blue-500/10',
               },
               {
                 icon: PiCourtBasketballBold,
-                title: 'Tactical Playbook',
-                desc: 'Digital combinations visualizer and motion sets executed with precision.',
+                title: t('feature2Title'),
+                desc: t('feature2Desc'),
                 color: 'text-amber-500 bg-amber-500/10',
               },
               {
                 icon: Trophy,
-                title: 'Live Box Scores',
-                desc: 'Quarter-by-quarter scoring, roster tracking, and match telemetry.',
+                title: t('feature3Title'),
+                desc: t('feature3Desc'),
                 color: 'text-emerald-500 bg-emerald-500/10',
               },
               {
                 icon: MapPin,
-                title: 'Premier Arenas',
-                desc: 'Saburtalo Olympic Palace and Vake training facilities with hardwood courts.',
+                title: t('feature4Title'),
+                desc: t('feature4Desc'),
                 color: 'text-purple-500 bg-purple-500/10',
               },
             ].map((f, i) => (
@@ -165,10 +172,10 @@ export default function LandingPage() {
               className="object-contain"
             />
             <span className="font-semibold text-slate-700 dark:text-slate-300">
-              Brooklyn Basketball Academy &bull; Tbilisi Branch
+              {t('footerBranch')}
             </span>
           </div>
-          <p>&copy; {new Date().getFullYear()} Brooklyn Basketball Academy. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} {t('brand')}. {t('footerRights')}</p>
         </div>
       </footer>
     </div>

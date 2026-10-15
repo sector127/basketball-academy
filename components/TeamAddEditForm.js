@@ -1,6 +1,7 @@
 'use client'
 
 import React, {useEffect, useState} from "react";
+import {useTranslations} from "next-intl";
 import {CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Label} from "@/components/ui/label";
 import {Input} from "@/components/ui/input";
@@ -11,8 +12,8 @@ import {
     SelectTrigger,
     SelectValue
 } from "@/components/ui/select";
-
 export default function TeamAddEditForm({register, setValue, initialValues}) {
+    const t = useTranslations("Teams");
     const [coaches, setCoaches] = useState([])
 
     useEffect(() => {
@@ -43,25 +44,25 @@ export default function TeamAddEditForm({register, setValue, initialValues}) {
     return (
         <div className='space-y-4'>
             <CardHeader>
-                <CardTitle>Team Details</CardTitle>
+                <CardTitle>{t('teamDetails')}</CardTitle>
             </CardHeader>
             <CardContent className='space-y-4'>
                 <div className='space-y-2'>
-                    <Label htmlFor='name'>Team Name</Label>
+                    <Label htmlFor='name'>{t('teamName')}</Label>
                     <Input name='name' id='name' {...register('name')} />
                 </div>
 
                 <div className='space-y-2'>
-                    <Label htmlFor='description'>Description</Label>
+                    <Label htmlFor='description'>{t('teamDescription')}</Label>
                     <Input name='description' id='description' {...register('description')} />
                 </div>
 
                 <div className='space-y-2'>
-                    <Label htmlFor='coach'>Coach</Label>
+                    <Label htmlFor='coach'>{t('coach')}</Label>
                     <Select onValueChange={(value) => setValue("coach", value)}
                             defaultValue={initialValues?.coach}>
                         <SelectTrigger>
-                            <SelectValue placeholder="Select coach"/>
+                            <SelectValue placeholder={t('selectCoach')}/>
                         </SelectTrigger>
                         <SelectContent>
                             {coaches.map((coach) => (

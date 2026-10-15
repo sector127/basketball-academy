@@ -7,15 +7,17 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/ui/page-header';
 import GameForm from '@/components/GameForm';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
 import { Trophy, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
+import { useToast } from '@/hooks/use-toast';
 
 export default function CreateGamePage() {
+  const t = useTranslations('Games');
   const { register, handleSubmit, setValue } = useForm();
-  const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const [submitting, setSubmitting] = useState(false);
 
   const onSubmit = async (data) => {
     try {
@@ -68,14 +70,14 @@ export default function CreateGamePage() {
   return (
     <DashboardLayout>
       <PageHeader
-        title="Schedule Match Fixture"
-        subtitle="Configure opposing team, arena venue, and scheduled tip-off time"
+        title={t('createGameTitle')}
+        subtitle={t('createGameSubtitle')}
         badge="New Game"
         icon={Trophy}
         actions={
           <Button asChild variant="outline" size="sm" className="shadow-sm">
             <Link href="/dashboard/admin/games">
-              <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to Match Center
+              <ArrowLeft className="mr-1.5 h-4 w-4" /> {t('backToGames')}
             </Link>
           </Button>
         }
@@ -87,14 +89,14 @@ export default function CreateGamePage() {
 
           <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
             <Button asChild variant="outline">
-              <Link href="/dashboard/admin/games">Cancel</Link>
+              <Link href="/dashboard/admin/games">{t('cancel')}</Link>
             </Button>
             <Button
               type="submit"
               disabled={submitting}
               className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold shadow-sm"
             >
-              {submitting ? 'Scheduling...' : 'Save Match Fixture'}
+              {submitting ? '...' : t('saveGame')}
             </Button>
           </div>
         </form>

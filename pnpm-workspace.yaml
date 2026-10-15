@@ -1,0 +1,11 @@
+# pnpm only runs install scripts for packages listed here
+allowBuilds:
+  bcrypt: true                # native password hashing module
+  esbuild: true               # used by vitest
+  mongodb-memory-server: true # downloads the MongoDB binary used by tests
+  sharp: true                 # image optimization for next/image
+onlyBuiltDependencies:
+  - bcrypt
+  - esbuild
+  - mongodb-memory-server
+  - sharp

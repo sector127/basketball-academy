@@ -50,6 +50,33 @@ const EventSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Player',
     }],
+    attendance: [{
+        player: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Player',
+            required: true,
+        },
+        status: {
+            type: String,
+            enum: ['present', 'absent', 'excused', 'injured'],
+            default: 'present',
+        },
+        notes: { type: String, default: '' },
+    }],
+    isRecurring: {
+        type: Boolean,
+        default: false,
+    },
+    recurringGroupId: {
+        type: String,
+        index: true,
+        default: null,
+    },
+    recurrenceRule: {
+        daysOfWeek: [{ type: Number }],
+        seasonEndDate: { type: Date },
+        frequencyPerWeek: { type: Number },
+    },
 }, {
     timestamps: true,
     toJSON: {virtuals: true},
@@ -64,6 +91,9 @@ EventSchema.virtual('gameResult', {
     justOne: true
 });
 
-const Event = mongoose.models.Event || mongoose.model('Event', EventSchema);
+if (mongoose.models.Event) {
+    delete mongoose.models.Event;
+}
+const Event = mongoose.model('Event', EventSchema);
 
 export default Event;

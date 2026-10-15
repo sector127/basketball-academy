@@ -2,13 +2,20 @@ import connectToDatabase from '@/lib/mongoose';
 import Player from '@/models/Player';
 import Team from "@/models/Team";
 import {NextResponse} from "next/server";
-import {writeFile} from "node:fs/promises";
-import {join} from 'path';
+import {requireAuth} from "@/lib/authGuard";
+import {UploadError, deleteUpload, isUploadedFile, saveImageUpload} from '@/lib/uploads';
+import {PLAYER_PUBLIC_FIELDS, canViewPlayerContacts} from '@/lib/access';
 
 export async function GET(req) {
+    const {session, errorResponse} = await requireAuth(['admin', 'coach', 'staff', 'player', 'guardian']);
+    if (errorResponse) return errorResponse;
     try {
         await connectToDatabase();
-        const players = await Player.find({isActive: true}).populate('team');
+        const url = new URL(req.url, 'http://localhost');
+        const includeAll = url.searchParams.get('all') === 'true';
+        const query = Player.find(includeAll ? {} : {isActive: true}).populate('team');
+        if (!canViewPlayerContacts(session.user.role)) query.select(PLAYER_PUBLIC_FIELDS);
+        const players = await query;
 
         return new Response(JSON.stringify(players), {
             status: 200,
@@ -28,6 +35,8 @@ export async function GET(req) {
 }
 
 export async function POST(request) {
+    const {errorResponse} = await requireAuth(['admin']);
+    if (errorResponse) return errorResponse;
     try {
         await connectToDatabase();
 
@@ -45,7 +54,7 @@ export async function POST(request) {
         }
 
         // Check for existing player with same jersey number
-        const existingPlayer = await Player.findOne({jerseyNum, team: teamId});
+        const existingPlayer = await Player.findOne({jerseyNum, team: teamId, isActive: {$ne: false}});
         if (existingPlayer) {
             return NextResponse.json(
                 {error: `Player with jersey number ${jerseyNum} already exists in this team`},
@@ -54,33 +63,11 @@ export async function POST(request) {
         }
 
         // Only proceed with file upload after all validations pass
-        let profilePicturePath = '';
+        let profilePicturePath = '/uploads/default-profile-picture.jpg';
         const profilePicture = formData.get('profilePicture');
 
-        if (profilePicture) {
-            try {
-                // Validate file type and size (example: only allow JPEG/PNG and limit to 5MB)
-                if (!['image/jpeg', 'image/png'].includes(profilePicture.type)) {
-                    return NextResponse.json({error: 'Invalid file type'}, {status: 400});
-                }
-                if (profilePicture.size > 5 * 1024 * 1024) { // 5MB limit
-                    return NextResponse.json({error: 'File size exceeds the limit'}, {status: 400});
-                }
-                const bytes = await profilePicture.arrayBuffer();
-                const buffer = Buffer.from(bytes);
-
-                const filename = `${Date.now()}-${profilePicture.name}`;
-                const uploadsDir = join(process.cwd(), 'public', 'uploads');
-
-                profilePicturePath = `/uploads/${filename}`;
-                await writeFile(join(uploadsDir, filename), buffer);
-
-            } catch (uploadError) {
-                console.error('Error uploading file:', uploadError);
-                return NextResponse.json({
-                    error: 'Failed to upload profile picture'
-                }, {status: 500});
-            }
+        if (isUploadedFile(profilePicture)) {
+            profilePicturePath = await saveImageUpload(profilePicture);
         }
 
         // Create player object with all form data
@@ -101,19 +88,26 @@ export async function POST(request) {
             isActive: true
         };
 
-        // Create new player
-        const newPlayer = await Player.create(playerData);
+        // Create new player (and don't leave an orphaned upload behind if it's invalid)
+        let newPlayer;
+        try {
+            newPlayer = await Player.create(playerData);
+        } catch (createError) {
+            await deleteUpload(profilePicturePath);
+            throw createError;
+        }
         await newPlayer.populate('team');
 
         return NextResponse.json(newPlayer, {status: 201});
     } catch (error) {
+        if (error instanceof UploadError) {
+            return NextResponse.json({error: error.message}, {status: error.status});
+        }
+        if (error.name === 'ValidationError') {
+            return NextResponse.json({error: Object.values(error.errors).map((e) => e.message).join(', ')}, {status: 400});
+        }
         console.error('Error creating player:', error);
         return NextResponse.json({error: 'Failed to create player'}, {status: 500});
     }
 }
 
-export const config = {
-    api: {
-        bodyParser: false,
-    },
-};

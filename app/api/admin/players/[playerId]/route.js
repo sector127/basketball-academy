@@ -1,20 +1,22 @@
 import {NextResponse} from "next/server";
+import {requireAuth} from "@/lib/authGuard";
 import connectToDatabase from '@/lib/mongoose';
 import Player from '@/models/Player';
 //eslint-disable-next-line
 import Team from '@/models/Team';
-import {unlink, writeFile} from "node:fs/promises";
-import {join} from 'path';
-import {existsSync} from "node:fs";
+import {UploadError, deleteUpload, isUploadedFile, saveImageUpload} from "@/lib/uploads";
+import {PLAYER_PUBLIC_FIELDS, canManageTeam, canViewPlayerContacts} from "@/lib/access";
 
 export async function GET(req, {params}) {
-    await connectToDatabase()
-
+    const {session, errorResponse} = await requireAuth(['admin', 'coach', 'staff', 'player', 'guardian']);
+    if (errorResponse) return errorResponse;
+    await connectToDatabase();
     const {playerId} = await params
+    const fields = canViewPlayerContacts(session.user.role) ? '' : PLAYER_PUBLIC_FIELDS;
 
     try {
         if (playerId) {
-            const player = await Player.findById(playerId).populate('team')
+            const player = await Player.findById(playerId).select(fields).populate('team')
             if (player) {
                 // player.age = Math.floor((new Date() - new Date(player.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000));
                 return NextResponse.json(player)
@@ -22,7 +24,7 @@ export async function GET(req, {params}) {
                 return NextResponse.json({error: 'Player not found'}, {status: 404})
             }
         } else {
-            const players = await Player.find({}).populate('team')
+            const players = await Player.find({}).select(fields).populate('team')
             return NextResponse.json(players)
         }
     } catch (error) {
@@ -32,6 +34,8 @@ export async function GET(req, {params}) {
 }
 
 export async function PUT(req, {params}) {
+    const {session, errorResponse} = await requireAuth(['admin', 'coach']);
+    if (errorResponse) return errorResponse;
     try {
         await connectToDatabase();
         const {playerId} = await params;
@@ -44,39 +48,19 @@ export async function PUT(req, {params}) {
             return NextResponse.json({error: 'Player not found'}, {status: 404});
         }
 
-        // Ensure upload directory exists
-        const uploadsDir = join(process.cwd(), 'public', 'uploads');
-        if (!existsSync(uploadsDir)) {
-            await mkdir(uploadsDir, {recursive: true});
+        // Coaches may only edit players on their teams, and only move them between their teams
+        // (an empty teamId would unassign the player, so it counts as a team the coach can't manage)
+        const targetTeamId = formData.get('teamId');
+        if (!(await canManageTeam(session, player.team)) || !(await canManageTeam(session, targetTeamId))) {
+            return NextResponse.json({error: 'Forbidden - You do not coach this player\'s team'}, {status: 403});
         }
 
-        // Handle profile picture upload
+        // The new photo is stored only after all checks pass (see below)
         const profilePicture = formData.get('profilePicture');
-        if (profilePicture && profilePicture.size > 0) {
-            if (!['image/jpeg', 'image/png'].includes(profilePicture.type)) {
-                return NextResponse.json({error: 'Invalid file type'}, {status: 400});
-            }
-            if (profilePicture.size > 5 * 1024 * 1024) {
-                return NextResponse.json({error: 'File size exceeds the limit'}, {status: 400});
-            }
-
-            const filename = `${Date.now()}-${profilePicture.name}`;
-            const filePath = join(uploadsDir, filename);
-            const bytes = await profilePicture.arrayBuffer();
-            await writeFile(filePath, Buffer.from(bytes));
-
-            if (player.profilePicture) {
-                try {
-                    await unlink(join(process.cwd(), 'public', player.profilePicture));
-                } catch (err) {
-                    console.error('Error deleting old profile picture:', err);
-                }
-            }
-            player.profilePicture = `/uploads/${filename}`;
-        }
 
         // Handle team assignment
         const teamId = formData.get('teamId');
+        const previousTeamId = player.team ? player.team.toString() : null;
         if (teamId) {
             const team = await Team.findById(teamId);
             if (!team) {
@@ -86,11 +70,15 @@ export async function PUT(req, {params}) {
         } else {
             player.team = null;
         }
+        // A starter on the old team isn't automatically a starter on the new one
+        if ((player.team ? player.team.toString() : null) !== previousTeamId) {
+            player.isFirstTeam = false;
+        }
 
         // Handle jersey number uniqueness
         const jerseyNum = parseInt(formData.get('jerseyNum'));
-        if (!isNaN(jerseyNum)) {
-            const existingPlayer = await Player.findOne({jerseyNum, team: teamId});
+        if (!isNaN(jerseyNum) && teamId) {
+            const existingPlayer = await Player.findOne({jerseyNum, team: teamId, isActive: {$ne: false}});
             if (existingPlayer && existingPlayer._id.toString() !== playerId) {
                 return NextResponse.json(
                     {error: `Player with jersey number ${jerseyNum} already exists in this team`},
@@ -114,21 +102,42 @@ export async function PUT(req, {params}) {
         player.guardian = formData.get('guardian') || player.guardian;
         player.guardianTel = formData.get('guardianTel') || player.guardianTel;
 
-        // Save and return updated player
-        const updatedPlayer = await player.save();
+        // Store the new photo, save, then remove the old photo (or the new one if saving fails)
+        let previousPicture = null;
+        let newPicture = null;
+        if (isUploadedFile(profilePicture)) {
+            previousPicture = player.profilePicture;
+            newPicture = await saveImageUpload(profilePicture);
+            player.profilePicture = newPicture;
+        }
+        let updatedPlayer;
+        try {
+            updatedPlayer = await player.save();
+        } catch (saveError) {
+            if (newPicture) await deleteUpload(newPicture);
+            throw saveError;
+        }
+        if (previousPicture) await deleteUpload(previousPicture);
         await updatedPlayer.populate('team');
 
         return NextResponse.json(updatedPlayer, {status: 200});
     } catch (error) {
+        if (error instanceof UploadError) {
+            return NextResponse.json({error: error.message}, {status: error.status});
+        }
+        if (error.name === 'ValidationError') {
+            return NextResponse.json({error: Object.values(error.errors).map((e) => e.message).join(', ')}, {status: 400});
+        }
+        if (error.code === 11000) {
+            return NextResponse.json(
+                {error: 'This team already has a starter in that position. Change the position or remove them from the starting five first.'},
+                {status: 409}
+            );
+        }
         console.error('Error updating player:', error);
         return NextResponse.json({error: 'Failed to update player'}, {status: 500});
     }
 }
 
-export const config = {
-    api: {
-        bodyParser: false,
-    },
-};
 
 

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import {usePathname} from "next/navigation";
 import Link from "next/link";
-
+import {useTranslations} from "next-intl";
 const fetchLabel = async (segment, path) => {
     // Extract collection name from the path
     const pathParts = path.split('/').filter(part => part);
@@ -35,11 +35,11 @@ const fetchLabel = async (segment, path) => {
 }
 
 const Breadcrumbs = () => {
+    const t = useTranslations("Breadcrumbs");
     const pathname = usePathname();
-    const pathSegments = pathname.split("/").filter((segment) => segment);
     const [labels, setLabels] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(true);
-
+    const pathSegments = React.useMemo(() => pathname.split("/").filter(Boolean), [pathname]);
     useEffect(() => {
         const fetchLabels = async () => {
             setIsLoading(true);
@@ -64,13 +64,16 @@ const Breadcrumbs = () => {
         };
 
         fetchLabels();
-    }, [pathname]);
+    }, [pathname, pathSegments]);
 
     const breadcrumbs = pathSegments.map((segment, index) => {
         const href = `/${pathSegments.slice(0, index + 1).join("/")}`;
+        const isObjectId = /^[0-9a-fA-F]{24}$/.test(segment);
+        const segmentKey = segment.toLowerCase();
+        const translatedSegment = (!isObjectId && t.has(segmentKey)) ? t(segmentKey) : null;
         const capitalSegment = segment.charAt(0).toUpperCase() + segment.slice(1);
         return {
-            label: labels[index] || capitalSegment,
+            label: labels[index] || translatedSegment || capitalSegment,
             href,
         };
     });
@@ -80,7 +83,7 @@ const Breadcrumbs = () => {
             <BreadcrumbList>
                 <BreadcrumbItem>
                     <BreadcrumbLink asChild>
-                        <Link href="/">Home</Link>
+                        <Link href="/">{t.has("home") ? t("home") : "Home"}</Link>
                     </BreadcrumbLink>
                 </BreadcrumbItem>
                 {breadcrumbs.map((breadcrumb, index) => (
@@ -89,9 +92,9 @@ const Breadcrumbs = () => {
                         <BreadcrumbItem>
                             <BreadcrumbLink asChild>
                                 {index === breadcrumbs.length - 1 ? (
-                                    <Link className="text-black font-bold" href={breadcrumb.href}>
+                                    <Link className="text-slate-900 dark:text-slate-100 font-bold" href={breadcrumb.href}>
                                         {isLoading && /^[0-9a-fA-F]{24}$/.test(pathSegments[index])
-                                            ? "Loading..."
+                                            ? (t.has("loading") ? t("loading") : "Loading...")
                                             : breadcrumb.label}
                                     </Link>
                                 ) : (

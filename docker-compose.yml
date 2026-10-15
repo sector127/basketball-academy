@@ -1,27 +1,30 @@
-# docker-compose.yml
-version: '3.8'
+# Local development: app with hot reload + MongoDB.
+# For production, build the `prod` target of the Dockerfile and mount /app/uploads.
 services:
   web:
-    build: .
+    build:
+      context: .
+      target: dev
     ports:
       - "3000:3000"
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/basketball
-      - WATCHPACK_POLLING=true    # Enable polling for Windows/macOS
+      - AUTH_SECRET=${AUTH_SECRET:?Set AUTH_SECRET (e.g. `openssl rand -base64 32`) before starting}
+      - ACADEMY_TIME_ZONE=${ACADEMY_TIME_ZONE:-Asia/Tbilisi}
+      - WATCHPACK_POLLING=true    # File watching through the bind mount on Windows/macOS
     depends_on:
       - mongodb
     volumes:
       - .:/app
       - /app/node_modules
       - /app/.next
-    # Add these for better hot reloading support
     stdin_open: true
     tty: true
 
   mongodb:
-    image: mongo:latest
+    image: mongo:7
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"   # Only reachable from this machine
     volumes:
       - mongodb_data:/data/db
 

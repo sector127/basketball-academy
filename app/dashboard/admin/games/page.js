@@ -8,23 +8,27 @@ import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { Trophy, Plus } from 'lucide-react';
 import Link from 'next/link';
-
+import { useTranslations } from 'next-intl';
+import { useIsAdmin } from '@/hooks/use-is-admin';
 export default function GamesPage() {
+  const t = useTranslations('Games');
   const router = useRouter();
-
+  const isAdmin = useIsAdmin();
   return (
     <DashboardLayout>
       <PageHeader
-        title="Match Center"
-        subtitle="Manage academy fixtures, opponent matchups, and game results"
+        title={t('matchCenter')}
+        subtitle={t('matchCenterSubtitle')}
         badge="2026 Season"
         icon={Trophy}
         actions={
-          <Button asChild size="sm" className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold shadow-sm">
-            <Link href="/dashboard/admin/games/create">
-              <Plus className="mr-1.5 h-4 w-4" /> Schedule Game
-            </Link>
-          </Button>
+          isAdmin && (
+            <Button asChild size="sm" className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold shadow-sm">
+              <Link href="/dashboard/admin/games/create">
+                <Plus className="mr-1.5 h-4 w-4" /> {t('scheduleGame')}
+              </Link>
+            </Button>
+          )
         }
       />
 

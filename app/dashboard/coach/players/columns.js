@@ -2,17 +2,65 @@
 
 import {createColumnHelper} from '@tanstack/react-table'
 import {Button} from "@/components/ui/button"
-import {LuArrowUpDown} from "react-icons/lu"
+import {ArrowUpDown as LuArrowUpDown} from "lucide-react";
 import {useRouter} from "next/navigation";
 import {useToast} from "@/hooks/use-toast";
-import {Tooltip} from '@mui/material';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {useState} from 'react';
-import {GoStar, GoStarFill} from "react-icons/go";
+import {GoStar, GoStarFill} from "@/components/icons/navIcons";
 import {ToastAction} from "@/components/ui/toast";
 import {mutate} from "swr";
+import {useTranslations} from "next-intl";
 
 const columnHelper = createColumnHelper()
 
+const NameHeader = () => {
+  const t = useTranslations("Players");
+  return <span>{t("fullName")}</span>;
+};
+
+const AgeHeader = ({ column }) => {
+  const t = useTranslations("Players");
+  return (
+    <Button
+      variant="ghost"
+      onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      className="-ml-5"
+    >
+      {t("dateOfBirth")}
+      <LuArrowUpDown className="ml-2 h-4 w-4" />
+    </Button>
+  );
+};
+
+const HeightHeader = ({ column }) => {
+  const t = useTranslations("Players");
+  return (
+    <Button
+      variant="ghost"
+      onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      className="-ml-8"
+    >
+      {t("height")}
+      <LuArrowUpDown className="ml-2 h-4 w-4" />
+    </Button>
+  );
+};
+
+const TeamHeader = () => {
+  const t = useTranslations("Players");
+  return <span>{t("teams")}</span>;
+};
+
+const GuardianHeader = () => {
+  const t = useTranslations("Players");
+  return <span>{t("guardianName")}</span>;
+};
 export const columns = (callbacks, context) => {
     const FullNameCell = ({row}) => {
         const {toast} = useToast()
@@ -84,21 +132,32 @@ export const columns = (callbacks, context) => {
                     {position && <div className="text-xs text-gray-500">{position}</div>}
                 </div>
                 {context === 'team' && (
-                    <Tooltip title='First Team' arrow>
-                        <button className='m-2 rounded-sm bg-slate-100 hover:bg-slate-300 p-1'
-                                onClick={handleToggleFirstTeam}
-                                onMouseDown={(e) => setIsAnimating(true)}
-                        >
-                            {player.isFirstTeam ?
-                                <GoStarFill
-                                    color='#FFD700'
-                                    size={16}
-                                    className={isAnimating ? 'animate-starScale' : ''}
-                                /> :
-                                <GoStar size={16}
-                                        className={isAnimating ? 'animate-starScale' : 'text-black'}/>}
-                        </button>
-                    </Tooltip>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
+                                    className='m-2 rounded-sm bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 p-1 transition-colors'
+                                    onClick={handleToggleFirstTeam}
+                                    onMouseDown={() => setIsAnimating(true)}
+                                    aria-label="Toggle Starter Status"
+                                >
+                                    {player.isFirstTeam ? (
+                                        <GoStarFill
+                                            color='#FFD700'
+                                            size={16}
+                                            className={isAnimating ? 'animate-starScale' : ''}
+                                        />
+                                    ) : (
+                                        <GoStar
+                                            size={16}
+                                            className={isAnimating ? 'animate-starScale' : 'text-slate-400'}
+                                        />
+                                    )}
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent>First Team Starter</TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 )}
             </div>
         )
@@ -107,44 +166,22 @@ export const columns = (callbacks, context) => {
     const coreColumns = [
         columnHelper.accessor(row => `${row.name} ${row.lastname}`, {
             id: 'fullName',
-            header: 'Name',
+            header: NameHeader,
             cell: FullNameCell,
         }),
         columnHelper.accessor('age', {
-            header: ({column}) => {
-                return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                        className='-ml-5'
-                    >
-                        Age
-                        <LuArrowUpDown className="ml-2 h-4 w-4"/>
-                    </Button>
-                )
-            },
+            header: AgeHeader,
             enableSorting: true,
         }),
         columnHelper.accessor('height', {
-            header: ({column}) => {
-                return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                        className='-ml-8'
-                    >
-                        Height
-                        <LuArrowUpDown className="ml-2 h-4 w-4"/>
-                    </Button>
-                )
-            },
+            header: HeightHeader,
             enableSorting: true,
         }),
         columnHelper.accessor('team.name', {
             id: 'team',
-            header: 'Team',
+            header: TeamHeader,
             cell: ({row}) => {
-                const teamName = row.original.team?.name || 'No Team'
+                const teamName = row.original.team?.name || '-'
                 return <span>{teamName}</span>
             }
         })
@@ -152,7 +189,7 @@ export const columns = (callbacks, context) => {
 
     // Guardian column definition
     const guardianColumn = columnHelper.accessor('guardian', {
-        header: 'Guardian',
+        header: GuardianHeader,
         cell: ({row}) => {
             const guardian = row.original.guardian
             const guardianTel = row.original.guardianTel

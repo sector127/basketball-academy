@@ -5,6 +5,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
+import { useTranslations } from 'next-intl';
 import {
   Dialog,
   DialogContent,
@@ -20,9 +21,12 @@ import { useForm } from 'react-hook-form';
 import Link from 'next/link';
 import Loader from '@/components/Loader';
 import { useToast } from '@/hooks/use-toast';
+import { useIsAdmin } from '@/hooks/use-is-admin';
 import { Shield, Plus, Edit2, Trash2, ArrowRight } from 'lucide-react';
 
 export default function AdminTeamsPage() {
+  const t = useTranslations('Teams');
+  const isAdmin = useIsAdmin();
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -105,7 +109,7 @@ export default function AdminTeamsPage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <PageHeader title="Teams Management" subtitle="Manage academy rosters and competitive divisions" />
+        <PageHeader title={t('managementTitle')} subtitle={t('loadingTeams')} />
         <Loader />
       </DashboardLayout>
     );
@@ -125,14 +129,16 @@ export default function AdminTeamsPage() {
   return (
     <DashboardLayout>
       <PageHeader
-        title="Teams Management"
-        subtitle="Manage academy squads, assign coaches, and view rosters"
-        badge={`${teams.length} Teams`}
+        title={t('managementTitle')}
+        subtitle={t('managementSubtitle')}
+        badge={t('teamsCount', { count: teams.length })}
         icon={Shield}
         actions={
-          <Button onClick={handleCreateClick} className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold shadow-sm">
-            <Plus className="mr-1.5 h-4 w-4" /> Create Team
-          </Button>
+          isAdmin && (
+            <Button onClick={handleCreateClick} className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold shadow-sm">
+              <Plus className="mr-1.5 h-4 w-4" /> {t('createTeam')}
+            </Button>
+          )
         }
       />
 
@@ -140,11 +146,9 @@ export default function AdminTeamsPage() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[480px] rounded-2xl">
           <DialogHeader>
-            <DialogTitle>{isEditing ? 'Edit Team Details' : 'Create New Team'}</DialogTitle>
+            <DialogTitle>{isEditing ? t('editTeamTitle') : t('createTeamTitle')}</DialogTitle>
             <DialogDescription>
-              {isEditing
-                ? 'Update team title, description, or assigned coaching staff.'
-                : 'Configure a new squad division in the academy.'}
+              {isEditing ? t('editTeamDescription') : t('createTeamDescription')}
             </DialogDescription>
           </DialogHeader>
 
@@ -157,10 +161,10 @@ export default function AdminTeamsPage() {
 
             <DialogFooter className="pt-4 border-t border-slate-100 dark:border-slate-800">
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancel
+                {t('cancel')}
               </Button>
               <Button type="submit" className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold">
-                {isEditing ? 'Save Changes' : 'Create Team'}
+                {isEditing ? t('saveChanges') : t('createTeam')}
               </Button>
             </DialogFooter>
           </form>
@@ -190,7 +194,7 @@ export default function AdminTeamsPage() {
                       </p>
                     </div>
                     <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-400 border border-amber-500/20 shrink-0">
-                      Roster
+                      {t('roster')}
                     </span>
                   </div>
 
@@ -206,18 +210,20 @@ export default function AdminTeamsPage() {
                 </div>
 
                 <div className="flex items-center justify-between gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEditClick(team)}
-                    className="text-xs"
-                  >
-                    <Edit2 className="mr-1.5 h-3.5 w-3.5" /> Edit
-                  </Button>
+                  {isAdmin ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditClick(team)}
+                      className="text-xs"
+                    >
+                      <Edit2 className="mr-1.5 h-3.5 w-3.5" /> {t('editTeam')}
+                    </Button>
+                  ) : <span />}
 
                   <Button asChild size="sm" className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold text-xs shadow-sm">
                     <Link href={`/dashboard/admin/teams/${team._id}`}>
-                      View Roster <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                      {t('viewRoster')} <ArrowRight className="ml-1 h-3.5 w-3.5" />
                     </Link>
                   </Button>
                 </div>
@@ -227,10 +233,9 @@ export default function AdminTeamsPage() {
         ) : (
           <EmptyState
             icon={Shield}
-            title="No teams configured"
-            description="Create your first basketball academy squad to start managing rosters."
-            actionText="Create Team"
-            onAction={handleCreateClick}
+            title={t('noTeamsConfigured')}
+            description={t('noTeamsDescription')}
+            actionText={t('createTeam')}
           />
         )}
       </motion.div>

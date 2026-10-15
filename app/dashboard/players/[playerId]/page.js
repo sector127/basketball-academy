@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Loader from '@/components/Loader';
 import DashboardLayout from '@/components/DashboardLayout';
 
-export default function UniversalPlayerDetailPage({ params }) {
-  const { playerId } = React.use(params);
+export default function UniversalPlayerDetailPage() {
+  const routeParams = useParams();
+  const playerId = routeParams?.playerId;
   const router = useRouter();
   const { data: session, status } = useSession();
 

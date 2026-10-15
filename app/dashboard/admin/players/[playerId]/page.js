@@ -5,11 +5,12 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/ui/page-header';
 import { StatCard } from '@/components/ui/stat-card';
 import { StatusBadge } from '@/components/ui/status-badge';
+import PlayerStatsTelemetry from '@/components/PlayerStatsTelemetry';
 import Image from 'next/image';
 import Loader from '@/components/Loader';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import {
   User,
   ArrowLeft,
@@ -23,12 +24,15 @@ import {
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
-export default function AdminPlayerDetailsPage({ params }) {
+export default function AdminPlayerDetailsPage() {
+  const t = useTranslations('Players');
+  const routeParams = useParams();
+  const playerId = routeParams?.playerId;
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { playerId } = React.use(params);
   const router = useRouter();
 
   useEffect(() => {
@@ -57,7 +61,7 @@ export default function AdminPlayerDetailsPage({ params }) {
   if (loading) {
     return (
       <DashboardLayout>
-        <PageHeader title="Player Profile" subtitle="Loading athlete telemetry..." />
+        <PageHeader title={t('playerProfile')} subtitle={t('profileSubtitle')} />
         <Loader />
       </DashboardLayout>
     );
@@ -66,9 +70,9 @@ export default function AdminPlayerDetailsPage({ params }) {
   if (error || !player) {
     return (
       <DashboardLayout>
-        <PageHeader title="Player Not Found" subtitle="Unable to load requested player" />
+        <PageHeader title={t('playerNotFound')} subtitle={t('playerNotFoundSubtitle')} />
         <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300">
-          {error || 'Player record does not exist or has been removed.'}
+          {error || t('playerNotFoundSubtitle')}
         </div>
       </DashboardLayout>
     );
@@ -87,7 +91,7 @@ export default function AdminPlayerDetailsPage({ params }) {
           <div className="flex items-center gap-2">
             <Button asChild variant="outline" size="sm" className="shadow-sm">
               <Link href="/dashboard/admin/players">
-                <ArrowLeft className="mr-1.5 h-4 w-4" /> Players Directory
+                <ArrowLeft className="mr-1.5 h-4 w-4" /> {t('backToPlayers')}
               </Link>
             </Button>
             <Button
@@ -95,7 +99,7 @@ export default function AdminPlayerDetailsPage({ params }) {
               size="sm"
               className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold shadow-sm"
             >
-              <Edit2 className="mr-1.5 h-4 w-4" /> Edit Profile
+              <Edit2 className="mr-1.5 h-4 w-4" /> {t('edit')}
             </Button>
           </div>
         }
@@ -127,11 +131,11 @@ export default function AdminPlayerDetailsPage({ params }) {
             <div className="mt-4 flex items-center justify-center gap-2">
               <StatusBadge
                 status={player.isActive ? 'active' : 'disabled'}
-                label={player.isActive ? 'Active Athlete' : 'Disabled'}
+                label={player.isActive ? t('active') : t('inactive')}
                 variant={player.isActive ? 'success' : 'destructive'}
               />
               {player.isFirstTeam && (
-                <StatusBadge status="firstTeam" label="First Team Starter" variant="gold" />
+                <StatusBadge status="firstTeam" label={t('firstTeam')} variant="gold" />
               )}
             </div>
 
@@ -159,31 +163,31 @@ export default function AdminPlayerDetailsPage({ params }) {
           {/* Key Metrics */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <StatCard
-              title="Jersey"
+              title={t('jerseyNum')}
               value={`#${player.jerseyNum ?? '--'}`}
-              description="Roster number"
+              description=""
               accent="gold"
             />
             <StatCard
-              title="Height"
+              title={t('height')}
               value={`${player.height ?? '--'} cm`}
-              description="Verified metric"
+              description=""
               accent="blue"
             />
             <StatCard
-              title="Age"
+              title={t('dateOfBirth')}
               value={player.age ?? '--'}
               description={
                 player.dateOfBirth
                   ? new Date(player.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
-                  : 'DOB verified'
+                  : ''
               }
               accent="emerald"
             />
             <StatCard
-              title="Position"
+              title={t('position')}
               value={player.position?.split(' ')[0] ?? 'Player'}
-              description={player.position ?? 'Court role'}
+              description={player.position ?? ''}
               accent="purple"
             />
           </div>
@@ -196,10 +200,10 @@ export default function AdminPlayerDetailsPage({ params }) {
               </div>
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  Emergency & Contact Information
+                  {t('emergencyContact')}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Direct telephone and authorized family contacts
+                  {t('guardianPhone')}
                 </p>
               </div>
             </div>
@@ -227,6 +231,11 @@ export default function AdminPlayerDetailsPage({ params }) {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Career & Season Telemetry */}
+      <div className="mt-8">
+        <PlayerStatsTelemetry playerId={playerId} />
       </div>
     </DashboardLayout>
   );

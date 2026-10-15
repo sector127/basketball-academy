@@ -11,34 +11,83 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LuArrowUpDown, LuMoreHorizontal } from "react-icons/lu";
+import { ArrowUpDown as LuArrowUpDown, MoreHorizontal as LuMoreHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
-  DialogActions,
   DialogContent,
-  DialogContentText,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Tooltip,
-} from "@mui/material";
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useState } from "react";
-import { GoStar, GoStarFill } from "react-icons/go";
+import { GoStar, GoStarFill, FaUserEdit, FaUserMinus } from "@/components/icons/navIcons";
 import { ToastAction } from "@/components/ui/toast";
-import { FaUserEdit } from "react-icons/fa";
-import { FaUserMinus } from "react-icons/fa6";
 import { mutate } from "swr";
+import { useTranslations } from "next-intl";
 
 const columnHelper = createColumnHelper();
 
+const NameHeader = () => {
+  const t = useTranslations("Players");
+  return <span>{t("fullName")}</span>;
+};
+
+const AgeHeader = ({ column }) => {
+  const t = useTranslations("Players");
+  return (
+    <Button
+      variant="ghost"
+      onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      className="-ml-5"
+    >
+      {t("dateOfBirth")}
+      <LuArrowUpDown className="ml-2 h-4 w-4" />
+    </Button>
+  );
+};
+
+const HeightHeader = ({ column }) => {
+  const t = useTranslations("Players");
+  return (
+    <Button
+      variant="ghost"
+      onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      className="-ml-8"
+    >
+      {t("height")}
+      <LuArrowUpDown className="ml-2 h-4 w-4" />
+    </Button>
+  );
+};
+
+const TeamHeader = () => {
+  const t = useTranslations("Players");
+  return <span>{t("teams")}</span>;
+};
+
+const GuardianHeader = () => {
+  const t = useTranslations("Players");
+  return <span>{t("guardianName")}</span>;
+};
 export const columns = (callbacks, context) => {
   // Define select column
   const selectColumn = columnHelper.accessor("select", {
     header: ({ table }) => {
       return (
         <Checkbox
-          checked={table.getIsAllPageRowsSelected()}
-          indeterminate={table.getIsSomePageRowsSelected()}
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
           onCheckedChange={(value) => {
             table.toggleAllPageRowsSelected(!!value);
           }}
@@ -62,11 +111,11 @@ export const columns = (callbacks, context) => {
 
   // Actions cell component (hooks allowed because this is a React component)
   const ActionsCell = ({ row }) => {
+    const t = useTranslations("Players");
     const player = row.original;
     const router = useRouter();
     const { toast } = useToast();
     const [openDialog, setOpenDialog] = useState(false);
-
     const handleEdit = (e) => {
       e.stopPropagation();
       router.push(`/dashboard/admin/players/edit/${player._id}`);
@@ -124,49 +173,40 @@ export const columns = (callbacks, context) => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuLabel>{t("actions")}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={handleEdit}
               className="flex justify-between cursor-pointer"
             >
-              Edit <FaUserEdit />
+              {t("edit")} <FaUserEdit />
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={handleOpenDialog}
               className="flex justify-between cursor-pointer"
             >
-              Disable <FaUserMinus />
+              {t("disable")} <FaUserMinus />
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Dialog
-          open={openDialog}
-          onClose={(e, reason) => {
-            e.stopPropagation();
-            if (reason === "backdropClick" || reason === "escapeKeyDown") {
-              return;
-            }
-            handleCancel();
-          }}
-          disableEscapeKeyDown
-        >
-          <DialogTitle>Confirm Disable</DialogTitle>
-          <DialogContent>
-            <DialogContentText>
-              Disabling this player cannot be undone. Are you sure you want to
-              proceed?
-            </DialogContentText>
+        <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+          <DialogContent onClick={(e) => e.stopPropagation()}>
+            <DialogHeader>
+              <DialogTitle>{t("confirmDisable")}</DialogTitle>
+              <DialogDescription>
+                {t("confirmDisableDesc", { count: 1 })}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button onClick={handleCancel} variant="outline">
+                {t("cancel")}
+              </Button>
+              <Button onClick={handleDisablePlayer} variant="destructive">
+                {t("disable")}
+              </Button>
+            </DialogFooter>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCancel} variant="outline">
-              Cancel
-            </Button>
-            <Button onClick={handleDisablePlayer} variant="destructive">
-              Disable
-            </Button>
-          </DialogActions>
         </Dialog>
       </>
     );
@@ -180,11 +220,11 @@ export const columns = (callbacks, context) => {
 
   // Full name cell component (hooks allowed)
   const FullNameCell = ({ row }) => {
+    const t = useTranslations("Players");
     const { toast } = useToast();
     const player = row.original;
     const [isAnimating, setIsAnimating] = useState(false);
     const router = useRouter();
-
     const handleToggleFirstTeam = async (e) => {
       e.stopPropagation();
       setIsAnimating(true);
@@ -266,26 +306,32 @@ export const columns = (callbacks, context) => {
           {position && <div className="text-xs text-gray-500">{position}</div>}
         </div>
         {context === "team" && (
-          <Tooltip title="First Team" arrow>
-            <button
-              className="m-2 rounded-sm bg-slate-100 hover:bg-slate-300 p-1"
-              onClick={handleToggleFirstTeam}
-              onMouseDown={(e) => setIsAnimating(true)}
-            >
-              {player.isFirstTeam ? (
-                <GoStarFill
-                  color="#FFD700"
-                  size={16}
-                  className={isAnimating ? "animate-starScale" : ""}
-                />
-              ) : (
-                <GoStar
-                  size={16}
-                  className={isAnimating ? "animate-starScale" : "text-black"}
-                />
-              )}
-            </button>
-          </Tooltip>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  className="m-2 rounded-sm bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 p-1 transition-colors"
+                  onClick={handleToggleFirstTeam}
+                  onMouseDown={() => setIsAnimating(true)}
+                  aria-label="Toggle Starter Status"
+                >
+                  {player.isFirstTeam ? (
+                    <GoStarFill
+                      color="#FFD700"
+                      size={16}
+                      className={isAnimating ? "animate-starScale" : ""}
+                    />
+                  ) : (
+                    <GoStar
+                      size={16}
+                      className={isAnimating ? "animate-starScale" : "text-slate-400"}
+                    />
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>{t("firstTeam")}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
       </div>
     );
@@ -295,44 +341,22 @@ export const columns = (callbacks, context) => {
   const coreColumns = [
     columnHelper.accessor((row) => `${row.name} ${row.lastname}`, {
       id: "fullName",
-      header: "Name",
+      header: NameHeader,
       cell: FullNameCell,
     }),
     columnHelper.accessor("age", {
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="-ml-5"
-          >
-            Age
-            <LuArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
+      header: AgeHeader,
       enableSorting: true,
     }),
     columnHelper.accessor("height", {
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="-ml-8"
-          >
-            Height
-            <LuArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
+      header: HeightHeader,
       enableSorting: true,
     }),
     columnHelper.accessor("team.name", {
       id: "team",
-      header: "Team",
+      header: TeamHeader,
       cell: ({ row }) => {
-        const teamName = row.original.team?.name || "No Team";
+        const teamName = row.original.team?.name || "-";
         return <span>{teamName}</span>;
       },
     }),
@@ -340,7 +364,7 @@ export const columns = (callbacks, context) => {
 
   // Guardian column definition
   const guardianColumn = columnHelper.accessor("guardian", {
-    header: "Guardian",
+    header: GuardianHeader,
     cell: ({ row }) => {
       const guardian = row.original.guardian;
       const guardianTel = row.original.guardianTel;
